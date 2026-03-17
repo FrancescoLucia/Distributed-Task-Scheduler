@@ -1,0 +1,45 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (REST/API)
+    participant E as Engine (Main/Event Thread)
+    participant S as Scheduler
+    participant W1 as Worker-Thread-1
+    participant W2 as Worker-Thread-2
+    participant DB as Livello DAO (Database)
+
+    C->>E: avviaWorkflow(workflow)
+    E->>DB: salva(workflow)
+
+    Note over E, S: L'Engine identifica i Task iniziali<br/>(senza dipendenze) e li invia allo Scheduler
+    E->>S: schedulaEsecuzione(Task_A)
+    E->>S: schedulaEsecuzione(Task_B)
+
+    Note over S, W2: Lo Scheduler smista i task<br/>ai thread liberi del pool
+    S-->>W1: assegna(Task_A)
+    S-->>W2: assegna(Task_B)
+
+    par Esecuzione Concorrente (Worker Pool)
+        Note over W1: Esecuzione su Thread 1
+        W1->>W1: Task_A.getAzione().esegui()
+    and
+        Note over W2: Esecuzione su Thread 2
+        W2->>W2: Task_B.getAzione().esegui()
+    end
+
+    Note over W1, E: Il Task_A finisce prima.<br/>Il Worker muta lo stato,<br/>che scatena l'Observer asincrono
+    W1->>W1: Task_A.cambiaStato(COMPLETATO)
+    W1-->>E: notifyObservers() -> aggiorna(Task_A)
+    
+    Note over E, DB: L'Engine gestisce l'evento<br/>(Thread Safety richiesta qui)
+    E->>DB: aggiornaStatoTask(Task_A)
+    E->>E: check dipendenze sbloccate da Task_A
+    
+    Note over E, S: L'Engine trova il Task_C<br/>che dipendeva da Task_A e lo schedula
+    E->>S: schedulaEsecuzione(Task_C)
+    S-->>W1: assegna(Task_C) (W1 era tornato libero)
+    W1->>W1: Task_C.getAzione().esegui()
+
+    Note over W2, E: Nel frattempo, il Task_B<br/>termina la sua esecuzione lunga
+    W2->>W2: Task_B.cambiaStato(COMPLETATO)
+    W2-->>E: notifyObservers() -> aggiorna(Task_B)
+    E->>DB: aggiornaStatoTask(Task_B)

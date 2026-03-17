@@ -1,0 +1,132 @@
+classDiagram
+    direction TD
+
+    class Engine {
+        <<Singleton>>
+        -numeroWorkers: int
+        +avviaWorkflow(workflow: Workflow)
+        +aggiorna(task: Task)
+        +onTaskCompletato(task: Task)
+        +onTaskFallito(task: Task)
+        +onTaskAnnullato(task: Task)
+        +onTaskPronto(task: Task)
+    }
+
+    class Workflow {
+        -nome: String
+        -dataCreazione: String
+        -stato: EStatoWorkflow
+        +addTask(task: Task)
+    }
+
+    class Task {
+        -id: int
+        -nome: String
+        -stato: EStatoTask
+        -azione: Command
+        -tentativi: int
+        -observers: List~TaskObserver~
+        +cambiaStato(nuovoStato: EStatoTask)
+        +getAzione() Command
+    }
+
+    class TaskObserver {
+        <<Interface>>
+        +aggiorna(task: Task)
+    }
+
+    class TaskSubject {
+        <<Interface>>
+        +aggiungiObserver(observer: TaskObserver)
+        +rimuoviObserver(observer: TaskObserver)
+        +notifyObservers()
+    }
+
+    class Command {
+        <<Interface>>
+        +esegui()
+        +annulla()
+    }
+
+    class ChiamataAPICommand {
+        -endpoint: String
+        -payload: String
+        +esegui()
+        +annulla()
+    }
+
+    class QuerySQLCommand {
+        -query: String
+        -dbUrl: String
+        +esegui()
+        +annulla()
+    }
+    
+    class ScriptCommand {
+        -scriptPath: String
+        +esegui()
+        +annulla()
+    }
+
+    class EStatoTask {
+        <<Enum>>
+        IN_ATTESA, PRONTO, IN_ESECUZIONE, FALLITO, ANNULLATO, COMPLETATO
+    }
+
+    class EStatoWorkflow {
+        <<Enum>>
+        IN_ESECUZIONE, COMPLETATO, FALLITO, IN_PAUSA, ANNULLATO
+    }
+    
+    class Scheduler {
+        <<Singleton>>
+        -codaTaskPronti: Queue~Task~
+        +schedulaEsecuzione(Task)
+    }
+
+    class Worker {
+        -taskCorrente: Task
+        +esegui(Task)
+    }
+
+    class WorkflowDAO {
+        -- Metodi DAO standard
+    }
+
+    class TaskDAO {
+        -- Metodi DAO standard
+    }
+
+    class RetryPolicy {
+        - maxTentativi: int
+        - intervallo: int
+    }
+
+    class RetryPolicyDAO {
+        -- Metodi DAO standard
+    }
+
+    TaskSubject <|.. Task  : Implementa
+    TaskObserver <|.. Engine  : Implementa
+    TaskSubject o--> TaskObserver : Notifica i cambiamenti
+
+    Command <|.. ChiamataAPICommand : Implementa
+    Command <|.. QuerySQLCommand : Implementa
+    Command <|.. ScriptCommand : Implementa
+    Task *-- Command : Contiene la logica
+
+    Engine "1" -- "1" Workflow : Gestisce
+    Engine --> Scheduler : Invia Task READY
+    Scheduler *-- Worker : Gestisce pool
+    
+    Worker --> Task : Esegue
+    
+    Workflow *-- Task : Contiene
+    Task --> Task : Dipendenze
+    Task -- EStatoTask : Ha uno
+    Workflow -- EStatoWorkflow : Ha uno
+    
+    Engine "1"--"1" WorkflowDAO : Salva lo stato
+    Engine "1"--"1" TaskDAO : Salva lo stato
+    Engine --> RetryPolicy : Applica politiche di retry
+    Engine "1"--"1" RetryPolicyDAO : Salva le politiche di retry

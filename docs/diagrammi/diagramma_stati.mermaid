@@ -1,0 +1,17 @@
+stateDiagram-v2
+    direction LR
+    
+    [*] --> IN_ATTESA : Aggiunta al Workflow
+    
+    IN_ATTESA --> PRONTO : Dipendenze completate
+    PRONTO --> IN_ESECUZIONE : Schedulato su un Worker
+    
+    IN_ESECUZIONE --> COMPLETATO : Command.esegui() terminato
+    IN_ESECUZIONE --> FALLITO : Eccezione/Errore
+    
+    FALLITO --> PRONTO : Applica RetryPolicy (Tentativi < Max)
+    
+    IN_ATTESA --> ANNULLATO : Azione utente / Workflow annullato
+    PRONTO --> ANNULLATO : Azione utente / Workflow annullato
+    IN_ESECUZIONE --> ANNULLATO : Command.annulla() invocato
+
