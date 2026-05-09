@@ -20,7 +20,7 @@ public class RepositoryWorkflowMock implements IRepositoryWorkflow {
     @Override
     public void persist(Workflow workflow) {
         if (workflow.getId() == null) {
-            workflow.setId(ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE));
+            workflow.setId(ThreadLocalRandom.current().nextLong(1, 1000));
         }
         workflows.put(workflow.getId(), workflow);
     }
@@ -31,8 +31,14 @@ public class RepositoryWorkflowMock implements IRepositoryWorkflow {
     }
 
     @Override
-    public boolean esisteWorkflowInCorso() {
+    public Optional<Workflow> getWorkflowInCorso() {
         return workflows.values().stream()
-        .anyMatch(w -> w.getStato().equals(EStatoWorkflow.IN_ESECUZIONE) || w.getStato().equals(EStatoWorkflow.IN_PAUSA));
+                .filter(w -> w.getStato().equals(EStatoWorkflow.IN_ESECUZIONE) || w.getStato().equals(EStatoWorkflow.IN_PAUSA))
+                .findAny();
+    }
+
+    @Override
+    public java.util.Collection<Workflow> findAll() {
+        return workflows.values();
     }
 }

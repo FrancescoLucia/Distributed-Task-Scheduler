@@ -11,10 +11,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @Slf4j
 @ApplicationScoped
 public class Engine implements TaskObserver {
@@ -38,16 +34,8 @@ public class Engine implements TaskObserver {
             repositoryTask.persist(task);
         });
 
-        Map<Long, Task> taskPerId = workflow.getTasks().stream()
-                .collect(Collectors.toMap(Task::getId, t -> t));
-
         workflow.getTasks().forEach(task ->
-                task.getDipendenze().forEach(depId -> {
-                    Task parent = taskPerId.get(depId);
-                    if (parent != null) {
-                        parent.getFigli().add(task.getId());
-                    }
-                })
+                task.getDipendenze().forEach(parent -> parent.getFigli().add(task))
         );
 
         workflow.getTasks().forEach(task -> {
@@ -59,7 +47,7 @@ public class Engine implements TaskObserver {
 
         workflow.getTasks().forEach(task -> task.aggiungiObserver(this));
 
-        log.info("Workflow '{}' importato con {} task. In attesa di avvio.", workflow.getNome(), workflow.getTasks().size());
+        log.info("Workflow '{} - {}' importato con {} task. In attesa di avvio.", workflow.getId(),  workflow.getNome(), workflow.getTasks().size());
     }
 
     public void avviaWorkflow(Long workflowId) {
@@ -87,18 +75,9 @@ public class Engine implements TaskObserver {
         }
 
         if (task.getStato() == EStatoTask.COMPLETATO) {
-            Set<Long> idCompletati = workflow.getTasks().stream()
-                    .filter(t -> t.getStato() == EStatoTask.COMPLETATO)
-                    .map(Task::getId)
-                    .collect(Collectors.toSet());
-
-            Map<Long, Task> taskPerId = workflow.getTasks().stream()
-                    .collect(Collectors.toMap(Task::getId, t -> t));
-
-            task.getFigli().forEach(figlioId -> {
-                Task figlio = taskPerId.get(figlioId);
-                if (figlio != null && figlio.getStato() == EStatoTask.IN_ATTESA
-                        && idCompletati.containsAll(figlio.getDipendenze())) {
+            task.getFigli().forEach(figlio -> {
+                if (figlio.getStato() == EStatoTask.IN_ATTESA
+                        && figlio.getDipendenze().stream().allMatch(d -> d.getStato() == EStatoTask.COMPLETATO)) {
                     log.info("Task '{}' pronto.", figlio.getNome());
                     figlio.setStato(EStatoTask.PRONTO);
                     scheduler.schedulaTask(figlio);

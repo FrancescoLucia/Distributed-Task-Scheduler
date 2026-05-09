@@ -1,5 +1,6 @@
 package it.unibas.taskscheduler.persistenza.hibernate;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import io.quarkus.arc.properties.IfBuildProperty;
@@ -22,9 +23,13 @@ public class RepositoryWorkflowHibernate implements IRepositoryWorkflow{
     }
 
     @Override
-    public boolean esisteWorkflowInCorso() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'esisteWorkflowInCorso'");
+    public Optional<Workflow> getWorkflowInCorso() {
+        throw new UnsupportedOperationException("Unimplemented method 'getWorkflowInCorso'");
+    }
+
+    @Override
+    public Collection<Workflow> findAll() {
+        throw new UnsupportedOperationException("Unimplemented method 'findAll'");
     }
 
 }

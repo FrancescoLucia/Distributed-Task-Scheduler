@@ -4,12 +4,17 @@ import it.unibas.taskscheduler.observable.TaskObserver;
 import it.unibas.taskscheduler.command.Command;
 import it.unibas.taskscheduler.observable.Observable;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(exclude = {"dipendenze", "figli", "observer"})
+@ToString(exclude = {"dipendenze", "figli", "observer"})
 public class Task implements Observable {
 
     private Long id;
@@ -17,8 +22,8 @@ public class Task implements Observable {
     private String nome;
     private EStatoTask stato = EStatoTask.IN_ATTESA;
     private Command azione;
-    private List<Long> dipendenze = new ArrayList<>();
-    private List<Long> figli = new ArrayList<>();
+    private List<Task> dipendenze = new ArrayList<>();
+    private List<Task> figli = new ArrayList<>();
     private int tentativi = 0;
 
     private transient List<TaskObserver> observer = new ArrayList<>();
@@ -62,11 +67,11 @@ public class Task implements Observable {
     private static boolean checkCambioStatoValido(EStatoTask statoAttuale, EStatoTask nuovoStato) {
         boolean invalido = (
             statoAttuale.equals(nuovoStato) ||
-            statoAttuale.equals(EStatoTask.COMPLETATO) || 
+            statoAttuale.equals(EStatoTask.COMPLETATO) ||
             statoAttuale.equals(EStatoTask.ANNULLATO) ||
             (statoAttuale.equals(EStatoTask.PRONTO) && nuovoStato.equals(EStatoTask.IN_ATTESA)) ||
-            (( nuovoStato.equals(EStatoTask.COMPLETATO) || statoAttuale.equals(EStatoTask.FALLITO) ) && !statoAttuale.equals(EStatoTask.IN_ESECUZIONE)) ||
-            ( nuovoStato.equals(EStatoTask.IN_ESECUZIONE) && !statoAttuale.equals(EStatoTask.PRONTO))
+            ((nuovoStato.equals(EStatoTask.COMPLETATO) || statoAttuale.equals(EStatoTask.FALLITO)) && !statoAttuale.equals(EStatoTask.IN_ESECUZIONE)) ||
+            (nuovoStato.equals(EStatoTask.IN_ESECUZIONE) && !statoAttuale.equals(EStatoTask.PRONTO))
         );
         return !invalido;
     }

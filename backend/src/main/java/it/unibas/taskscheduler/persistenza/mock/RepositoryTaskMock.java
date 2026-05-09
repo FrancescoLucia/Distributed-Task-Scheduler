@@ -19,7 +19,7 @@ public class RepositoryTaskMock implements IRepositoryTask {
     @Override
     public void persist(Task task) {
         if (task.getId() == null) {
-            task.setId(ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE));
+            task.setId(ThreadLocalRandom.current().nextLong(1, 1000));
         }
         tasks.put(task.getId(), task);
     }
