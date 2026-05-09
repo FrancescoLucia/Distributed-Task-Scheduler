@@ -1,0 +1,24 @@
+<mat-card class="scheda-worker">
+  <mat-card-header>
+    <mat-card-title>Panoramica worker</mat-card-title>
+    <mat-card-subtitle>Stato del sistema</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="metriche-worker">
+      <span>liberi: <strong>{{ workerLiberi }}</strong></span>
+      <span>occupati: <strong>{{ workerOccupati }}</strong></span>
+    </div>
+    @for (nodoWorker of worker; track nodoWorker.id) {
+      <div class="riga-worker">
+        <div>
+          <strong>{{ nodoWorker.nome }}</strong>
+          <span>{{ etichettaStatoWorker(nodoWorker.stato) }}</span>
+        </div>
+        <mat-chip [class]="'chip-worker stato-worker-' + nodoWorker.stato">
+          {{ etichettaStatoWorker(nodoWorker.stato) }}
+        </mat-chip>
+        <small>{{ nodoWorker.taskCorrente ?? 'nessun task in esecuzione' }}</small>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

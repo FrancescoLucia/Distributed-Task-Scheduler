@@ -1,0 +1,268 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: #f5f7f8;
+}
+
+.barra-app {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 12px;
+  border-bottom: 1px solid #dce3e6;
+  background: #ffffff;
+  color: #172026;
+}
+
+.spaziatore {
+  flex: 1 1 auto;
+}
+
+.stato-toolbar {
+  border-radius: 999px;
+}
+
+.stato-toolbar {
+  padding: 4px 12px;
+  font: var(--mat-sys-label-large);
+}
+
+.dashboard {
+  width: min(1280px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 40px;
+}
+
+.intestazione {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.soprattitolo,
+.meta,
+mat-card-subtitle,
+.riga-worker span {
+  color: #5f6f76;
+}
+
+.soprattitolo {
+  margin: 0 0 6px;
+  font: var(--mat-sys-label-large);
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #172026;
+  font: var(--mat-sys-headline-large);
+  letter-spacing: 0;
+}
+
+.meta {
+  margin: 8px 0 0;
+}
+
+.controlli {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.controlli button {
+  min-width: 116px;
+}
+
+.azione-pericolo {
+  --mat-button-outlined-label-text-color: #9d1c1f;
+  --mat-button-outlined-outline-color: #dba5a6;
+}
+
+.griglia-dashboard {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(280px, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+mat-card {
+  border: 1px solid #dce3e6;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+mat-card-content {
+  padding-top: 16px;
+}
+
+.numero-avanzamento {
+  margin-bottom: 10px;
+  color: #12343b;
+  font: var(--mat-sys-display-small);
+}
+
+.metriche {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 18px;
+  color: #39484f;
+}
+
+.metriche-worker {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #39484f;
+}
+
+.riga-worker {
+  display: grid;
+  grid-template-columns: minmax(110px, 170px) auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ebeff1;
+}
+
+.riga-worker:last-child {
+  border-bottom: 0;
+}
+
+.riga-worker div {
+  display: grid;
+  gap: 3px;
+}
+
+.chip-worker {
+  justify-self: start;
+}
+
+.stato-worker-libero {
+  color: #1b6e35;
+  background: #e6f5ec;
+}
+
+.stato-worker-occupato {
+  color: #006d75;
+  background: #dff6f8;
+}
+
+.stato-worker-inPausa {
+  color: #9a5b00;
+  background: #fff1d6;
+}
+
+.stato-worker-offline {
+  color: #6a7378;
+  background: #edf1f3;
+}
+
+.scheda-grafo {
+  grid-column: 1 / -1;
+}
+
+.scheda-grafo mat-card-content {
+  min-height: 420px;
+}
+
+.stato-IN_ESECUZIONE,
+.icona-IN_ESECUZIONE {
+  color: #006d75;
+}
+
+.stato-COMPLETATO,
+.icona-COMPLETATO {
+  color: #1b6e35;
+}
+
+.stato-IN_ATTESA,
+.icona-IN_ATTESA,
+.stato-PRONTO,
+.icona-PRONTO {
+  color: #6a7378;
+}
+
+.stato-FALLITO,
+.stato-ANNULLATO,
+.icona-FALLITO,
+.icona-ANNULLATO {
+  color: #b4232a;
+}
+
+.stato-IN_PAUSA,
+.icona-IN_PAUSA {
+  color: #9a5b00;
+}
+
+.stato-toolbar.stato-IN_ESECUZIONE {
+  background: #d9f1f2;
+}
+
+.stato-toolbar.stato-IN_PAUSA {
+  background: #ffe7bd;
+}
+
+.stato-toolbar.stato-ANNULLATO,
+.stato-toolbar.stato-FALLITO {
+  background: #f8d7da;
+}
+
+.stato-toolbar.stato-COMPLETATO {
+  background: #dff3e5;
+}
+
+.scheda-lista-workflow {
+  margin-bottom: 18px;
+}
+
+.scheda-elenco mat-list-item {
+  min-height: 76px;
+}
+
+.meta-task {
+  width: min(520px, 42vw);
+}
+
+mat-chip-set {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .intestazione {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .griglia-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .riga-worker {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .meta-task {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard {
+    width: min(100% - 20px, 1280px);
+    padding-top: 18px;
+  }
+
+  h1 {
+    font: var(--mat-sys-headline-small);
+  }
+
+  .controlli,
+  .controlli button {
+    width: 100%;
+  }
+}

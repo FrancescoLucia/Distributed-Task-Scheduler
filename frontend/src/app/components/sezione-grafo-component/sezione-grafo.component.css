@@ -1,0 +1,15 @@
+:host {
+  display: block;
+  grid-column: 1 / -1;
+}
+
+mat-card {
+  border: 1px solid #dce3e6;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+mat-card-content {
+  min-height: 420px;
+  padding-top: 16px;
+}

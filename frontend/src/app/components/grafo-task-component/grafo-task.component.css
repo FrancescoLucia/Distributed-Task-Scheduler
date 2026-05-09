@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+.contenitore-grafo {
+  width: 100%;
+  min-height: 420px;
+  height: clamp(420px, 58vh, 640px);
+  border: 1px solid #ebeff1;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fbfcfd 0%, #f3f7f9 100%);
+}
