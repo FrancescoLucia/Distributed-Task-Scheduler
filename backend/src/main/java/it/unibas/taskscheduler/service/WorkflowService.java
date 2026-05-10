@@ -1,4 +1,4 @@
-package it.unibas.taskscheduler.rest;
+package it.unibas.taskscheduler.service;
 
 import it.unibas.taskscheduler.command.ScriptCommand;
 import it.unibas.taskscheduler.engine.Engine;
@@ -10,23 +10,15 @@ import it.unibas.taskscheduler.rest.dto.WorkflowDTO;
 import it.unibas.taskscheduler.rest.dto.WorkflowSummaryDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-@Path("/workflow")
 @ApplicationScoped
-@Produces(MediaType.APPLICATION_JSON)
 @Slf4j
-public class WorkflowResource {
+public class WorkflowService {
 
     @Inject
     Engine engine;
@@ -34,37 +26,36 @@ public class WorkflowResource {
     @Inject
     IRepositoryWorkflow repositoryWorkflow;
 
-    @GET
     public List<WorkflowSummaryDTO> listaWorkflow() {
         return repositoryWorkflow.findAll().stream()
                 .map(WorkflowSummaryDTO::from)
                 .toList();
     }
 
-    @GET
-    @Path("/{id}")
-    public WorkflowDTO getWorkflow(@PathParam("id") Long id) {
+    public WorkflowDTO getWorkflow(Long id) {
         return repositoryWorkflow.findById(id)
                 .map(WorkflowDTO::from)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
     }
 
-    @GET
-    @Path("/{id}/graph")
-    public GraphDTO getGrafo(@PathParam("id") Long id) {
+    public GraphDTO getGrafo(Long id) {
         return repositoryWorkflow.findById(id)
                 .map(GraphDTO::from)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
     }
 
-    @POST
-    @Path("/importa")
-    public Response importa() {
-        Task taskA = new Task("Task-A", new ScriptCommand("sleep 1 && echo 'Test 1 done'"));
-        Task taskB = new Task("Task-B", new ScriptCommand("sleep 1 && echo 'Test 2 done'"));
-        Task taskC = new Task("Task-C", new ScriptCommand("sleep 1 && echo 'Test 3 done'"));
-        Task taskD = new Task("Task-D", new ScriptCommand("sleep 1 && echo 'Test 4 done'"));
-        Task taskE = new Task("Task-E", new ScriptCommand("sleep 1 && echo 'Test 5 done'"));
+    private Task getTaskDemo(String nomeTask) {
+        int sleep = ThreadLocalRandom.current().nextInt(1, 120);
+        String istruzione = String.format("sleep %d && echo '%s done'", sleep, nomeTask);
+        return new Task(nomeTask, new ScriptCommand(istruzione));
+    }
+
+    public Long importaWorkflowDemo() {
+        Task taskA = getTaskDemo("Task-A");
+        Task taskB = getTaskDemo("Task-B");
+        Task taskC = getTaskDemo("Task-C");
+        Task taskD = getTaskDemo("Task-D");
+        Task taskE = getTaskDemo("Task-E");
 
         taskB.getDipendenze().add(taskA);
         taskC.getDipendenze().add(taskA);
@@ -81,21 +72,16 @@ public class WorkflowResource {
         workflow.aggiungiTask(taskE);
 
         engine.importaWorkflow(workflow);
-
-        return Response.ok(workflow.getId()).build();
+        return workflow.getId();
     }
 
-    @POST
-    @Path("/{id}/avvia")
-    public Response avvia(@PathParam("id") Long id) {
+    public void avviaWorkflow(Long id) {
         repositoryWorkflow.getWorkflowInCorso().ifPresent(workflowInCorso -> {
             log.info("Workflow in corso: {}", workflowInCorso);
-            log.info("Id nuovo: {}", id);
             if (!workflowInCorso.getId().equals(id)) {
                 throw new IllegalArgumentException("Terminare prima il workflow in esecuzione");
             }
         });
         engine.avviaWorkflow(id);
-        return Response.noContent().build();
     }
 }

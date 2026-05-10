@@ -15,6 +15,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @ApplicationScoped
@@ -24,6 +26,7 @@ public class Scheduler {
     int numeroWorker;
 
     private ExecutorService threadPoolWorkers;
+    private ScheduledExecutorService scheduledExecutor;
     private final BlockingQueue<Task> codaTaskPronti = new PriorityBlockingQueue<>(
             1, (t1, t2) -> Integer.compare(t2.getFigli().size(), t1.getFigli().size()));
     private volatile boolean inEsecuzione = true;
@@ -37,7 +40,8 @@ public class Scheduler {
         log.info("Progetto avviato con persistenza {}", strategiaPersistenza);
         log.info("Avvio dello scheduler con {} thread worker.", numeroWorker);
         threadPoolWorkers = Executors.newFixedThreadPool(numeroWorker);
-        
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+
         threadScheduler = new Thread(this::assegnaTask);
         threadScheduler.start();
     }
@@ -47,11 +51,17 @@ public class Scheduler {
         inEsecuzione = false;
         threadScheduler.interrupt();
         threadPoolWorkers.shutdown();
+        scheduledExecutor.shutdown();
     }
 
     public void schedulaTask(Task task) {
         log.info("Schedulazione task {}.", task.getNome());
         codaTaskPronti.offer(task);
+    }
+
+    public void schedulaTaskConRitardo(Task task, int intervalloSecondi) {
+        log.info("Retry task {} tra {} secondi.", task.getNome(), intervalloSecondi);
+        scheduledExecutor.schedule(() -> codaTaskPronti.offer(task), intervalloSecondi, TimeUnit.SECONDS);
     }
 
     private void assegnaTask() {

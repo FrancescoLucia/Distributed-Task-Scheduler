@@ -37,6 +37,7 @@ export interface NodoGrafo {
   id: number;
   nome: string;
   stato: EStatoTask;
+  tentativi: number;
 }
 
 export interface ArcoDipendenza {

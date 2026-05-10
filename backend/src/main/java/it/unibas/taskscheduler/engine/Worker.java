@@ -5,6 +5,9 @@ import it.unibas.taskscheduler.modello.EStatoWorker;
 import it.unibas.taskscheduler.modello.Task;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.microprofile.config.ConfigProvider;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Data
@@ -23,6 +26,12 @@ public class Worker implements Runnable {
         this.stato = EStatoWorker.OCCUPATO;
         task.setStato(EStatoTask.IN_ESECUZIONE);
         try {
+            double probabilitaFallimento = ConfigProvider.getConfig()
+                    .getOptionalValue("task.scheduler.debug.probabilita-fallimento", Double.class)
+                    .orElse(0.0);
+            if (probabilitaFallimento > 0.0 && ThreadLocalRandom.current().nextDouble() < probabilitaFallimento) {
+                throw new RuntimeException("[DEBUG] Fallimento simulato per il task " + task.getNome());
+            }
             task.getAzione().esegui();
             task.setStato(EStatoTask.COMPLETATO);
             log.info("Task {} completato con successo.", task.getNome());

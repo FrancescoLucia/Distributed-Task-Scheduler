@@ -21,6 +21,7 @@ public class GraphDTO {
         private Long id;
         private String nome;
         private EStatoTask stato;
+        private int tentativi;
     }
 
     @Data
@@ -33,7 +34,7 @@ public class GraphDTO {
     public static GraphDTO from(Workflow workflow) {
         GraphDTO dto = new GraphDTO();
         dto.nodi = workflow.getTasks().stream()
-                .map(t -> new NodoDTO(t.getId(), t.getNome(), t.getStato()))
+                .map(t -> new NodoDTO(t.getId(), t.getNome(), t.getStato(), t.getTentativi()))
                 .toList();
 
         List<DipendenzaDTO> edges = new ArrayList<>();

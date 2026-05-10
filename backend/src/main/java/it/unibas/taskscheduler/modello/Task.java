@@ -70,9 +70,14 @@ public class Task implements Observable {
             statoAttuale.equals(EStatoTask.COMPLETATO) ||
             statoAttuale.equals(EStatoTask.ANNULLATO) ||
             (statoAttuale.equals(EStatoTask.PRONTO) && nuovoStato.equals(EStatoTask.IN_ATTESA)) ||
-            ((nuovoStato.equals(EStatoTask.COMPLETATO) || statoAttuale.equals(EStatoTask.FALLITO)) && !statoAttuale.equals(EStatoTask.IN_ESECUZIONE)) ||
+            (nuovoStato.equals(EStatoTask.COMPLETATO) && !statoAttuale.equals(EStatoTask.IN_ESECUZIONE)) ||
+            (statoAttuale.equals(EStatoTask.FALLITO) && !nuovoStato.equals(EStatoTask.PRONTO)) ||
             (nuovoStato.equals(EStatoTask.IN_ESECUZIONE) && !statoAttuale.equals(EStatoTask.PRONTO))
         );
         return !invalido;
+    }
+
+    public void incrementaTentativi() {
+        this.tentativi++;
     }
 }

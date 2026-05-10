@@ -1,7 +1,7 @@
 package it.unibas.taskscheduler.rest;
 
-import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import it.unibas.taskscheduler.rest.dto.EngineStatusDTO;
+import it.unibas.taskscheduler.service.EngineService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -12,16 +12,14 @@ import jakarta.ws.rs.core.MediaType;
 @Path("/engine")
 @ApplicationScoped
 @Produces(MediaType.APPLICATION_JSON)
-public class EngineResource {
+public class EngineRest {
 
     @Inject
-    IRepositoryWorkflow repositoryWorkflow;
+    EngineService engineService;
 
     @GET
     @Path("/status")
     public EngineStatusDTO status() {
-        return repositoryWorkflow.getWorkflowInCorso()
-                .map(EngineStatusDTO::from)
-                .orElse(EngineStatusDTO.inattivo());
+        return engineService.getStatus();
     }
 }

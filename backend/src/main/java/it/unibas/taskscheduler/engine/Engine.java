@@ -1,10 +1,13 @@
 package it.unibas.taskscheduler.engine;
 
+import it.unibas.taskscheduler.modello.ConfigurazioneEngine;
 import it.unibas.taskscheduler.modello.EStatoTask;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
+import it.unibas.taskscheduler.modello.RetryPolicy;
 import it.unibas.taskscheduler.modello.Task;
 import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.observable.TaskObserver;
+import it.unibas.taskscheduler.persistenza.IRepositoryConfigurazioneEngine;
 import it.unibas.taskscheduler.persistenza.IRepositoryTask;
 import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,6 +26,11 @@ public class Engine implements TaskObserver {
 
     @Inject
     IRepositoryTask repositoryTask;
+
+    @Inject
+    IRepositoryConfigurazioneEngine repositoryConfigurazione;
+
+    private static final RetryPolicy RetryPolicyDefault = new RetryPolicy(5, 5);
 
     public void importaWorkflow(Workflow workflow) {
         log.info("Importazione workflow '{}'", workflow.getNome());
@@ -92,10 +100,24 @@ public class Engine implements TaskObserver {
                 log.info("Workflow '{}' completato.", workflow.getNome());
             }
 
-        } else if (task.getStato() == EStatoTask.FALLITO) { //TODO: Gestire politiche di retry
-            log.error("Task '{}' fallito. Workflow marcato come FALLITO.", task.getNome());
-            workflow.setStato(EStatoWorkflow.FALLITO);
-            repositoryWorkflow.persist(workflow);
+        } else if (task.getStato() == EStatoTask.FALLITO) {
+            RetryPolicy policy = repositoryConfigurazione.find()
+                    .map(ConfigurazioneEngine::getRetryPolicy)
+                    .orElse(RetryPolicyDefault);
+
+            if (policy != null && task.getTentativi() < policy.getMaxTentativi()) {
+                task.incrementaTentativi();
+                repositoryTask.persist(task);
+                log.warn("Task '{}' fallito. Retry {}/{} tra {} secondi.",
+                        task.getNome(), task.getTentativi(), policy.getMaxTentativi(), policy.getIntervallo());
+                task.setStato(EStatoTask.PRONTO);
+                scheduler.schedulaTaskConRitardo(task, policy.getIntervallo());
+            } else {
+                log.error("Task '{}' fallito definitivamente dopo {} tentativi. Workflow marcato FALLITO.",
+                        task.getNome(), task.getTentativi());
+                workflow.setStato(EStatoWorkflow.FALLITO);
+                repositoryWorkflow.persist(workflow);
+            }
         }
     }
 }
