@@ -37,7 +37,11 @@ public class Worker implements Runnable {
             log.info("Task {} completato con successo.", task.getNome());
         } catch (Exception e) {
             log.error("Task {} fallito.", task.getNome(), e);
-            task.setStato(EStatoTask.FALLITO);
+            try {
+                task.setStato(EStatoTask.FALLITO);
+            } catch (IllegalArgumentException ignored) {
+                log.warn("Task {} già in stato {}, transizione a FALLITO ignorata.", task.getNome(), task.getStato());
+            }
         } finally {
             this.stato = EStatoWorker.LIBERO;
         }

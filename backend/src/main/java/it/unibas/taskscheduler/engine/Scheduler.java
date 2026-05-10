@@ -2,14 +2,16 @@ package it.unibas.taskscheduler.engine;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Task;
+import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.persistenza.IRepositoryTask;
+import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +37,9 @@ public class Scheduler {
     @Inject
     IRepositoryTask repositoryTask;
 
+    @Inject
+    IRepositoryWorkflow repositoryWorkflow;
+
     void startup(@Observes StartupEvent ev) {
         String strategiaPersistenza = repositoryTask.getClass().getName().indexOf("Mock") != -1 ? "Mock" : "Hibernate";
         log.info("Progetto avviato con persistenza {}", strategiaPersistenza);
@@ -59,6 +64,10 @@ public class Scheduler {
         codaTaskPronti.offer(task);
     }
 
+    public void svuotaCoda() {
+        codaTaskPronti.clear();
+    }
+
     public void schedulaTaskConRitardo(Task task, int intervalloSecondi) {
         log.info("Retry task {} tra {} secondi.", task.getNome(), intervalloSecondi);
         scheduledExecutor.schedule(() -> codaTaskPronti.offer(task), intervalloSecondi, TimeUnit.SECONDS);
@@ -67,10 +76,24 @@ public class Scheduler {
     private void assegnaTask() {
         while (inEsecuzione) {
             try {
-                Task task = codaTaskPronti.take();
+                Task task = codaTaskPronti.poll(500, TimeUnit.MILLISECONDS);
+                if (task == null) continue;
+
+                Workflow workflow = repositoryWorkflow.findById(task.getWorkflowId()).orElse(null);
+                if (workflow == null) continue;
+
+                EStatoWorkflow statoWf = workflow.getStato();
+                if (statoWf == EStatoWorkflow.IN_PAUSA) {
+                    codaTaskPronti.offer(task);
+                    Thread.sleep(200);
+                    continue;
+                }
+                if (statoWf != EStatoWorkflow.IN_ESECUZIONE) {
+                    continue;
+                }
+
                 log.info("Invio task {} a un esecutore.", task.getNome());
                 threadPoolWorkers.submit(new Worker(task));
-                Thread.sleep(100);
             } catch (InterruptedException e) {
                 log.warn("Thread dello scheduler interrotto.");
                 Thread.currentThread().interrupt();

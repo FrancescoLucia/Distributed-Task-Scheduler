@@ -19,4 +19,22 @@ public class Workflow {
     public void aggiungiTask(Task task) {
         this.tasks.add(task);
     }
+
+    public void trasmettiStatoAiTask(EStatoTask stato) {
+        tasks.stream()
+                .filter(t -> t.getStato() == EStatoTask.IN_ATTESA || t.getStato() == EStatoTask.PRONTO)
+                .forEach(t -> t.setStato(stato));
+    }
+
+    public void pausa() {
+        this.stato = EStatoWorkflow.IN_PAUSA;
+    }
+
+    public void riprendi() {
+       this.stato = EStatoWorkflow.IN_ESECUZIONE;
+    }
+
+    public void annulla() {
+        this.stato = EStatoWorkflow.ANNULLATO;
+    }
 }

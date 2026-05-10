@@ -82,6 +82,11 @@ public class Engine implements TaskObserver {
             return;
         }
 
+        EStatoWorkflow statoWf = workflow.getStato();
+        if (statoWf == EStatoWorkflow.COMPLETATO || statoWf == EStatoWorkflow.FALLITO || statoWf == EStatoWorkflow.ANNULLATO) {
+            return;
+        }
+
         if (task.getStato() == EStatoTask.COMPLETATO) {
             task.getFigli().forEach(figlio -> {
                 if (figlio.getStato() == EStatoTask.IN_ATTESA
@@ -117,7 +122,24 @@ public class Engine implements TaskObserver {
                         task.getNome(), task.getTentativi());
                 workflow.setStato(EStatoWorkflow.FALLITO);
                 repositoryWorkflow.persist(workflow);
+                workflow.trasmettiStatoAiTask(EStatoTask.FALLITO);
             }
         }
+    }
+
+    public synchronized void annullaWorkflow(Workflow workflow) {
+        workflow.annulla();
+        scheduler.svuotaCoda();
+        annullaTuttiTask(workflow);
+    }
+
+    private void annullaTuttiTask(Workflow workflow) {
+        workflow.getTasks().stream()
+                .filter(t -> t.getStato() == EStatoTask.IN_ESECUZIONE)
+                .forEach(t -> {
+                    t.getAzione().annulla();
+                    t.setStato(EStatoTask.ANNULLATO);
+                });
+        workflow.trasmettiStatoAiTask(EStatoTask.ANNULLATO);
     }
 }

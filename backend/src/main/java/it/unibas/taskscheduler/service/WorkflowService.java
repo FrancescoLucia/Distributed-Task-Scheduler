@@ -2,6 +2,7 @@ package it.unibas.taskscheduler.service;
 
 import it.unibas.taskscheduler.command.ScriptCommand;
 import it.unibas.taskscheduler.engine.Engine;
+import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Task;
 import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
@@ -64,7 +65,7 @@ public class WorkflowService {
         taskD.getDipendenze().add(taskC);
 
         Workflow workflow = new Workflow();
-        workflow.setNome("Workflow Demo");
+        workflow.setNome("Workflow Demo " + ThreadLocalRandom.current().nextInt(1, 100));
         workflow.aggiungiTask(taskA);
         workflow.aggiungiTask(taskB);
         workflow.aggiungiTask(taskC);
@@ -83,5 +84,30 @@ public class WorkflowService {
             }
         });
         engine.avviaWorkflow(id);
+    }
+
+    public void pausaWorkflow(Long id) {
+        Workflow workflow = repositoryWorkflow.findById(id)
+                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
+        workflow.pausa();
+        log.info("Workflow '{}' messo in pausa.", workflow.getNome());
+    }
+
+    public void riprendiWorkflow(Long id) {
+        Workflow workflow = repositoryWorkflow.findById(id)
+                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
+        workflow.riprendi();
+        log.info("Workflow '{}' ripreso.", workflow.getNome());
+    }
+
+    public void annullaWorkflow(Long id) {
+        Workflow workflow = repositoryWorkflow.findById(id)
+                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
+        EStatoWorkflow stato = workflow.getStato();
+        if (stato == EStatoWorkflow.COMPLETATO || stato == EStatoWorkflow.FALLITO || stato == EStatoWorkflow.ANNULLATO) {
+            throw new IllegalStateException("Il workflow è già in stato terminale");
+        }
+        engine.annullaWorkflow(workflow);
+        log.info("Workflow '{}' annullato.", workflow.getNome());
     }
 }

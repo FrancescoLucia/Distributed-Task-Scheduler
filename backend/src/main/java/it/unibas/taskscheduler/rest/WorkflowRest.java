@@ -49,8 +49,40 @@ public class WorkflowRest {
 
     @POST
     @Path("/{id}/avvia")
-    public Response avvia(@PathParam("id") Long id) {
+    public void avvia(@PathParam("id") Long id) {
         workflowService.avviaWorkflow(id);
-        return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/{id}/pausa")
+    public Response pausa(@PathParam("id") Long id) {
+        try {
+            workflowService.pausaWorkflow(id);
+            return Response.noContent().build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/{id}/riprendi")
+    public Response riprendi(@PathParam("id") Long id) {
+        try {
+            workflowService.riprendiWorkflow(id);
+            return Response.noContent().build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/{id}/annulla")
+    public Response annulla(@PathParam("id") Long id) {
+        try {
+            workflowService.annullaWorkflow(id);
+            return Response.noContent().build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 }
