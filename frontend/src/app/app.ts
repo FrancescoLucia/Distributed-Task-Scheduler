@@ -1,12 +1,16 @@
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule, MatTabGroup, MatTab } from '@angular/material/tabs';
 
 import { WorkflowService, EStatoWorkflow, EStatoTask } from './dati-runtime-workflow.service';
 import { SezioneAvanzamentoComponent } from './components/sezione-avanzamento-component/sezione-avanzamento.component';
@@ -19,14 +23,19 @@ import { SezioneGrafoComponent } from './components/sezione-grafo-component/sezi
     MatBadgeModule,
     MatButtonModule,
     MatCardModule,
+    MatChipsModule,
     MatDividerModule,
+    MatExpansionModule,
     MatIconModule,
     MatListModule,
+    MatProgressSpinnerModule,
     MatToolbarModule,
     MatTooltipModule,
     SezioneGrafoComponent,
     SezioneAvanzamentoComponent,
-  ],
+    MatTabGroup,
+    MatTab
+],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -37,21 +46,27 @@ export class App implements OnInit {
   protected readonly listaWorkflow = this.servizioWorkflow.listaWorkflow;
   protected readonly grafoWorkflow = this.servizioWorkflow.grafoWorkflow;
 
+  protected readonly taskCompletati = computed(() =>
+    this.grafoWorkflow()?.nodi.filter(n => n.stato === 'COMPLETATO').length ?? 0
+  );
+
+  protected readonly taskTotali = computed(() =>
+    this.grafoWorkflow()?.nodi.length ?? 0
+  );
+
   protected readonly avanzamentoPercentuale = computed(() => {
-    const engine = this.statoEngine();
-    if (!engine || engine.taskTotali === 0) return 0;
-    return Math.round((engine.taskCompletati / engine.taskTotali) * 100);
+    const totali = this.taskTotali();
+    if (totali === 0) return 0;
+    return Math.round((this.taskCompletati() / totali) * 100);
   });
 
-  protected readonly taskInErrore = computed(() => {
-    const grafo = this.grafoWorkflow();
-    if (!grafo) return 0;
-    return grafo.nodi.filter(n => n.stato === 'FALLITO').length;
-  });
+  protected readonly taskInErrore = computed(() =>
+    this.grafoWorkflow()?.nodi.filter(n => n.tentativi > 0).length ?? 0
+  );
 
   ngOnInit(): void {
     this.servizioWorkflow.caricaListaWorkflow();
-    this.servizioWorkflow.caricaStatoEngine();
+    this.servizioWorkflow.ripristinaSeAttivo();
   }
 
   protected importaWorkflow(): void {
@@ -60,6 +75,21 @@ export class App implements OnInit {
 
   protected avviaWorkflow(id: number): void {
     this.servizioWorkflow.avviaWorkflow(id).subscribe();
+  }
+
+  protected mettiInPausa(): void {
+    const id = this.servizioWorkflow.idWorkflowAttivo();
+    if (id !== null) this.servizioWorkflow.mettiInPausa(id).subscribe();
+  }
+
+  protected riprendi(): void {
+    const id = this.servizioWorkflow.idWorkflowAttivo();
+    if (id !== null) this.servizioWorkflow.riprendi(id).subscribe();
+  }
+
+  protected annullaWorkflow(): void {
+    const id = this.servizioWorkflow.idWorkflowAttivo();
+    if (id !== null) this.servizioWorkflow.annulla(id).subscribe();
   }
 
   protected etichettaStato(stato: EStatoWorkflow | EStatoTask | string | null): string {

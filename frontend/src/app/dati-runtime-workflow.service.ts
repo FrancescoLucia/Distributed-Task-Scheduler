@@ -50,14 +50,21 @@ export interface WorkflowGraph {
   dipendenze: ArcoDipendenza[];
 }
 
+export interface ConfigurazioneEngine {
+  maxTentativi: number;
+  intervallo: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WorkflowService {
   private readonly http = inject(HttpClient);
+  private readonly STORAGE_KEY = 'workflowAttivoId';
 
   readonly statoEngine = signal<EngineStatus | null>(null);
   readonly listaWorkflow = signal<WorkflowSummary[]>([]);
   readonly grafoWorkflow = signal<WorkflowGraph | null>(null);
   readonly idWorkflowAttivo = signal<number | null>(null);
+  readonly configurazioneEngine = signal<ConfigurazioneEngine | null>(null);
 
   private intervalloPolling: ReturnType<typeof setInterval> | null = null;
 
@@ -73,9 +80,34 @@ export class WorkflowService {
     );
   }
 
+  ripristinaSeAttivo(): void {
+    this.http.get<EngineStatus>(`${BASE_URL}/engine/status`).subscribe(stato => {
+      this.statoEngine.set(stato);
+      const idSalvato = localStorage.getItem(this.STORAGE_KEY);
+      if (idSalvato !== null) {
+        if (stato.stato === 'IN_ESECUZIONE' || stato.stato === 'IN_PAUSA') {
+          this.avviaPolling(stato.workflowInCorsoId ?? Number(idSalvato));
+        } else {
+          localStorage.removeItem(this.STORAGE_KEY);
+        }
+      }
+    });
+  }
+
   private caricaGrafo(id: number): void {
     this.http.get<WorkflowGraph>(`${BASE_URL}/workflow/${id}/graph`).subscribe(grafo =>
       this.grafoWorkflow.set(grafo)
+    );
+  }
+
+  caricaConfigurazione(): void {
+    this.http.get<ConfigurazioneEngine>(`${BASE_URL}/engine/configurazione`)
+      .subscribe(c => this.configurazioneEngine.set(c));
+  }
+
+  aggiornaConfigurazione(config: ConfigurazioneEngine): Observable<void> {
+    return this.http.put<void>(`${BASE_URL}/engine/configurazione`, config).pipe(
+      tap(() => this.configurazioneEngine.set(config))
     );
   }
 
@@ -91,19 +123,34 @@ export class WorkflowService {
     );
   }
 
+  mettiInPausa(id: number): Observable<void> {
+    return this.http.post<void>(`${BASE_URL}/workflow/${id}/pausa`, null);
+  }
+
+  riprendi(id: number): Observable<void> {
+    return this.http.post<void>(`${BASE_URL}/workflow/${id}/riprendi`, null);
+  }
+
+  annulla(id: number): Observable<void> {
+    return this.http.post<void>(`${BASE_URL}/workflow/${id}/annulla`, null);
+  }
+
   avviaPolling(idWorkflow: number): void {
     this.idWorkflowAttivo.set(idWorkflow);
+    localStorage.setItem(this.STORAGE_KEY, String(idWorkflow));
     this.fermaPolling();
     this.caricaStatoEngine();
     this.caricaGrafo(idWorkflow);
     this.intervalloPolling = setInterval(() => {
-      this.caricaStatoEngine();
       this.caricaGrafo(idWorkflow);
-      const stato = this.statoEngine()?.stato;
-      if (stato === 'COMPLETATO' || stato === 'FALLITO' || stato === 'ANNULLATO') {
-        this.fermaPolling();
-        this.caricaListaWorkflow();
-      }
+      this.http.get<EngineStatus>(`${BASE_URL}/engine/status`).subscribe(stato => {
+        this.statoEngine.set(stato);
+        if (stato.stato === 'COMPLETATO' || stato.stato === 'FALLITO' || stato.stato === 'ANNULLATO') {
+          this.fermaPolling();
+          localStorage.removeItem(this.STORAGE_KEY);
+          this.caricaListaWorkflow();
+        }
+      });
     }, INTERVALLO_POLLING_MS);
   }
 

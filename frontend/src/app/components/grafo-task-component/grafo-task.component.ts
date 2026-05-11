@@ -111,13 +111,13 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
       ],
     });
 
-    this.resizeObserver = new ResizeObserver(() => {
-      this.cy?.resize();
-      this.cy?.fit(undefined, 40);
-    });
-    this.resizeObserver.observe(this.contenitoreGrafo.nativeElement);
+    // this.resizeObserver = new ResizeObserver(() => {
+    //   this.cy?.resize();
+    //   this.cy?.fit(undefined, 40);
+    // });
+    // this.resizeObserver.observe(this.contenitoreGrafo.nativeElement);
 
-    this.cy.fit(undefined, 40);
+    // this.cy.fit(undefined, 40);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -152,9 +152,10 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private mappaNodo(nodo: NodoGrafo): ElementoNodoGrafo {
+    const retry = nodo.tentativi > 0 ? `\n↺ ${nodo.tentativi}` : '';
     return {
       id: String(nodo.id),
-      label: `${nodo.nome}\n<${this.etichettaStato(nodo.stato)}>`,
+      label: `${nodo.nome}\n<${this.etichettaStato(nodo.stato)}>${retry}`,
       stato: nodo.stato,
     };
   }

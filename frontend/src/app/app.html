@@ -12,23 +12,96 @@
 <main class="dashboard">
   <section class="intestazione">
     <div>
-      <p class="soprattitolo">Workflow</p>
+      <p class="soprattitolo">Workflow in esecuzione</p>
       <h1>{{ statoEngine()?.workflowInCorsoNome ?? 'Task Scheduler' }}</h1>
     </div>
-    <div class="controlli">
-      <button mat-flat-button type="button" color="primary" (click)="importaWorkflow()">
-        <mat-icon aria-hidden="true">upload</mat-icon>
-        Importa
-      </button>
-    </div>
+    @if (grafoWorkflow()) {
+      <div class="controlli">
+        @if (statoEngine()?.stato !== 'IN_PAUSA') {
+          <button mat-stroked-button type="button" matTooltip="Metti in pausa" (click)="mettiInPausa()"
+            [disabled]="statoEngine()?.stato !== 'IN_ESECUZIONE'">
+            <mat-icon aria-hidden="true">pause</mat-icon>
+            Pausa
+          </button>
+        }
+        @if (statoEngine()?.stato === 'IN_PAUSA') {
+          <button mat-flat-button type="button" color="primary" matTooltip="Riprendi esecuzione" (click)="riprendi()">
+            <mat-icon aria-hidden="true">play_arrow</mat-icon>
+            Riprendi
+          </button>
+        }
+        <button mat-stroked-button type="button" class="azione-pericolo" matTooltip="Annulla workflow" (click)="annullaWorkflow()"
+          [disabled]="statoEngine()?.stato !== 'IN_ESECUZIONE' && statoEngine()?.stato !== 'IN_PAUSA'">
+          <mat-icon aria-hidden="true">stop_circle</mat-icon>
+          Annulla
+        </button>
+      </div>
+    }
   </section>
 
-  @if (listaWorkflow().length > 0) {
-    <mat-card class="scheda-elenco scheda-lista-workflow">
+  @if (grafoWorkflow()) {
+    <section class="griglia-dashboard">
+      <app-sezione-grafo [grafo]="grafoWorkflow()!"></app-sezione-grafo>
+
+      <mat-tab-group class="tab-full-width">
+        <mat-tab label="Avanzamento"><app-sezione-avanzamento
+        [percentuale]="avanzamentoPercentuale()"
+        [taskCompletati]="taskCompletati()"
+        [taskTotali]="taskTotali()"
+        [taskInErrore]="taskInErrore()"
+      ></app-sezione-avanzamento></mat-tab>
+        <mat-tab label="Lista Task">
+          <mat-card class="scheda-elenco">
       <mat-card-header>
-        <mat-card-title>Workflow disponibili</mat-card-title>
+        <mat-card-title>Task runtime</mat-card-title>
+        <mat-card-subtitle>Stato e tentativi per ogni task</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
+        <mat-list>
+          @for (nodo of grafoWorkflow()!.nodi; track nodo.id) {
+            <mat-list-item>
+              @if (nodo.stato === 'IN_ESECUZIONE') {
+                <mat-spinner matListItemIcon diameter="20"></mat-spinner>
+              } @else {
+                <mat-icon matListItemIcon [class]="'icona-' + nodo.stato">radio_button_checked</mat-icon>
+              }
+              <div matListItemTitle>{{ nodo.nome }}</div>
+              <div matListItemLine>{{ etichettaStato(nodo.stato) }}</div>
+              <div matListItemMeta>
+                @if (nodo.tentativi > 0) {
+                  <mat-chip-set aria-label="Retry">
+                    <mat-chip class="chip-retry">↺ {{ nodo.tentativi }}</mat-chip>
+                  </mat-chip-set>
+                }
+              </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+          }
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+        </mat-tab>
+      </mat-tab-group>
+    </section>
+
+    
+  } @else {
+    <div class="stato-vuoto">
+      <mat-icon>hourglass_empty</mat-icon>
+      <p>Nessun workflow in esecuzione</p>
+    </div>
+  }
+
+  <mat-accordion class="pannelli-secondari">
+    <mat-expansion-panel [expanded]="!grafoWorkflow()">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Workflow</mat-panel-title>
+        <mat-panel-description>{{ listaWorkflow().length }} disponibili</mat-panel-description>
+      </mat-expansion-panel-header>
+
+      @if (listaWorkflow().length === 0) {
+        <p class="testo-vuoto">Nessun workflow importato.</p>
+      } @else {
         <mat-list>
           @for (workflow of listaWorkflow(); track workflow.id) {
             <mat-list-item>
@@ -48,42 +121,14 @@
             <mat-divider></mat-divider>
           }
         </mat-list>
-      </mat-card-content>
-    </mat-card>
-  }
+      }
 
-  @if (grafoWorkflow()) {
-    <section class="griglia-dashboard">
-      <app-sezione-grafo [grafo]="grafoWorkflow()!"></app-sezione-grafo>
-
-      <app-sezione-avanzamento
-        [percentuale]="avanzamentoPercentuale()"
-        [taskCompletati]="statoEngine()?.taskCompletati ?? 0"
-        [taskTotali]="statoEngine()?.taskTotali ?? 0"
-        [taskInErrore]="taskInErrore()"
-      ></app-sezione-avanzamento>
-
-      <!-- TODO: workers da integrare con API -->
-      <!-- <app-sezione-worker [worker]="[]" [workerLiberi]="0" [workerOccupati]="0"></app-sezione-worker> -->
-    </section>
-
-    <mat-card class="scheda-elenco">
-      <mat-card-header>
-        <mat-card-title>Task runtime</mat-card-title>
-        <mat-card-subtitle>Stato task del workflow in esecuzione</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-list>
-          @for (nodo of grafoWorkflow()!.nodi; track nodo.id) {
-            <mat-list-item>
-              <mat-icon matListItemIcon [class]="'icona-' + nodo.stato">radio_button_checked</mat-icon>
-              <div matListItemTitle>{{ nodo.nome }}</div>
-              <div matListItemLine>{{ etichettaStato(nodo.stato) }}</div>
-            </mat-list-item>
-            <mat-divider></mat-divider>
-          }
-        </mat-list>
-      </mat-card-content>
-    </mat-card>
-  }
+      <mat-action-row>
+        <button mat-button type="button" (click)="importaWorkflow()">
+          <mat-icon>upload</mat-icon>
+          Importa workflow
+        </button>
+      </mat-action-row>
+    </mat-expansion-panel>
+  </mat-accordion>
 </main>

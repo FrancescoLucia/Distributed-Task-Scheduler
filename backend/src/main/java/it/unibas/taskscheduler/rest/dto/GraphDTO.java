@@ -37,13 +37,13 @@ public class GraphDTO {
                 .map(t -> new NodoDTO(t.getId(), t.getNome(), t.getStato(), t.getTentativi()))
                 .toList();
 
-        List<DipendenzaDTO> edges = new ArrayList<>();
+        List<DipendenzaDTO> dipendenzeDTO = new ArrayList<>();
         for (Task task : workflow.getTasks()) {
             for (Task dep : task.getDipendenze()) {
-                edges.add(new DipendenzaDTO(dep.getId(), task.getId()));
+                dipendenzeDTO.add(new DipendenzaDTO(dep.getId(), task.getId()));
             }
         }
-        dto.dipendenze = edges;
+        dto.dipendenze = dipendenzeDTO;
         return dto;
     }
 }

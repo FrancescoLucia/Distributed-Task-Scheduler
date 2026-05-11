@@ -1,5 +1,6 @@
 package it.unibas.taskscheduler.rest.dto;
 
+import it.unibas.taskscheduler.modello.EStatoTask;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Workflow;
 import lombok.Data;
@@ -24,7 +25,7 @@ public class WorkflowSummaryDTO {
         dto.dataCreazione = workflow.getDataCreazione();
         dto.taskTotali = workflow.getTasks().size();
         dto.taskCompletati = workflow.getTasks().stream()
-                .filter(t -> t.getStato() == it.unibas.taskscheduler.modello.EStatoTask.COMPLETATO)
+                .filter(t -> t.getStato() == EStatoTask.COMPLETATO)
                 .count();
         return dto;
     }

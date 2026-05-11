@@ -83,7 +83,8 @@ public class WorkflowService {
                 throw new IllegalArgumentException("Terminare prima il workflow in esecuzione");
             }
         });
-        engine.avviaWorkflow(id);
+        Workflow workflow = repositoryWorkflow.findById(id).orElseThrow(() -> new NotFoundException("Workflow non trovato"));
+        engine.avviaWorkflow(workflow);
     }
 
     public void pausaWorkflow(Long id) {
