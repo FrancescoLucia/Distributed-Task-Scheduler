@@ -23,7 +23,6 @@ public class ScriptCommand implements Command {
                     .start();
             int exitCode = processo.waitFor();
             if (exitCode != 0) {
-                // TODO: Sostituire con fallimento esplicito del task, aggiungere messaggio errore
                 throw new RuntimeException("Comando terminato con exit code " + exitCode + ": " + comando);
             }
         } catch (InterruptedException e) {
@@ -42,4 +41,6 @@ public class ScriptCommand implements Command {
             log.info("Comando annullato: {}", comando);
         }
     }
+
+    // TODO: Eventualmente potrei specificare un comando di rollback da eseguire nel metodo annulla
 }

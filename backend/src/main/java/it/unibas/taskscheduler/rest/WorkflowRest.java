@@ -66,23 +66,13 @@ public class WorkflowRest {
 
     @POST
     @Path("/{id}/riprendi")
-    public Response riprendi(@PathParam("id") Long id) {
-        try {
-            workflowService.riprendiWorkflow(id);
-            return Response.noContent().build();
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
+    public void riprendi(@PathParam("id") Long id) {
+        workflowService.riprendiWorkflow(id);
     }
 
     @POST
     @Path("/{id}/annulla")
-    public Response annulla(@PathParam("id") Long id) {
-        try {
-            workflowService.annullaWorkflow(id);
-            return Response.noContent().build();
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
+    public void annulla(@PathParam("id") Long id) {
+        workflowService.annullaWorkflow(id);
     }
 }

@@ -1,15 +1,16 @@
 package it.unibas.taskscheduler.persistenza.mock;
 
+import it.unibas.taskscheduler.Utilita;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 @ApplicationScoped
 @DefaultBean
@@ -20,7 +21,7 @@ public class RepositoryWorkflowMock implements IRepositoryWorkflow {
     @Override
     public void persist(Workflow workflow) {
         if (workflow.getId() == null) {
-            workflow.setId(ThreadLocalRandom.current().nextLong(1, 1000));
+            workflow.setId(Utilita.generaIdRandomMock(workflows.keySet()));
         }
         workflows.put(workflow.getId(), workflow);
     }
@@ -38,7 +39,7 @@ public class RepositoryWorkflowMock implements IRepositoryWorkflow {
     }
 
     @Override
-    public java.util.Collection<Workflow> findAll() {
+    public Collection<Workflow> findAll() {
         return workflows.values();
     }
 }

@@ -12,7 +12,7 @@ public class TaskService {
     @Inject
     IRepositoryTask repositoryTask;
 
-    public TaskDTO getTask(Long id) {
+    public TaskDTO findById(Long id) {
         return repositoryTask.findById(id)
                 .map(TaskDTO::from)
                 .orElseThrow(() -> new NotFoundException("Task non trovato: " + id));

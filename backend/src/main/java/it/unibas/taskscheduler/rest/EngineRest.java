@@ -19,7 +19,7 @@ public class EngineRest {
 
     @GET
     @Path("/status")
-    public EngineStatusDTO status() {
+    public EngineStatusDTO getStatus() {
         return engineService.getStatus();
     }
 }

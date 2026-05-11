@@ -80,4 +80,20 @@ public class Task implements Observable {
     public void incrementaTentativi() {
         this.tentativi++;
     }
+
+    public void esegui() {
+        this.azione.esegui();
+    }
+
+    public void annulla() {
+        this.azione.annulla();
+    }
+
+    public boolean isCompletato() {
+        return this.stato.equals(EStatoTask.COMPLETATO);
+    }
+
+    public boolean isInEsecuzione() {
+        return this.stato.equals(EStatoTask.IN_ESECUZIONE);
+    }
 }

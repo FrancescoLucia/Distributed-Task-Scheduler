@@ -22,13 +22,12 @@ public class ConfigurazioneEngineRest {
     ConfigurazioneEngineService configurazioneEngineService;
 
     @GET
-    public ConfigurazioneEngineDTO get() {
+    public ConfigurazioneEngineDTO getConfigurazione() {
         return configurazioneEngineService.getConfigurazione();
     }
 
     @PUT
-    public Response aggiorna(ConfigurazioneEngineDTO dto) {
+    public void aggiornaConfigurazione(ConfigurazioneEngineDTO dto) {
         configurazioneEngineService.aggiorna(dto);
-        return Response.noContent().build();
     }
 }

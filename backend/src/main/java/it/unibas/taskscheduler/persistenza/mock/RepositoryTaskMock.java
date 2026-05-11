@@ -1,5 +1,6 @@
 package it.unibas.taskscheduler.persistenza.mock;
 
+import it.unibas.taskscheduler.Utilita;
 import it.unibas.taskscheduler.modello.Task;
 import it.unibas.taskscheduler.persistenza.IRepositoryTask;
 import io.quarkus.arc.DefaultBean;
@@ -19,7 +20,7 @@ public class RepositoryTaskMock implements IRepositoryTask {
     @Override
     public void persist(Task task) {
         if (task.getId() == null) {
-            task.setId(ThreadLocalRandom.current().nextLong(1, 1000));
+            task.setId(Utilita.generaIdRandomMock(tasks.keySet()));
         }
         tasks.put(task.getId(), task);
     }
@@ -27,5 +28,9 @@ public class RepositoryTaskMock implements IRepositoryTask {
     @Override
     public Optional<Task> findById(Long id) {
         return Optional.ofNullable(tasks.get(id));
+    }
+
+    @Override
+    public void update(Task task) {
     }
 }

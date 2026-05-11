@@ -2,6 +2,7 @@ package it.unibas.taskscheduler.engine;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import it.unibas.taskscheduler.Utilita;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Task;
 import it.unibas.taskscheduler.modello.Workflow;
@@ -30,7 +31,7 @@ public class Scheduler {
     private ExecutorService threadPoolWorkers;
     private ScheduledExecutorService scheduledExecutor;
     private final BlockingQueue<Task> codaTaskPronti = new PriorityBlockingQueue<>(
-            1, (t1, t2) -> Integer.compare(t2.getFigli().size(), t1.getFigli().size()));
+            10, Utilita::comparaTaskPerNumeroFigli);
     private volatile boolean inEsecuzione = true;
     private Thread threadScheduler;
 
@@ -64,14 +65,14 @@ public class Scheduler {
         codaTaskPronti.offer(task);
     }
 
+    public void schedulaTaskConRitardo(Task task, int intervalloSecondi) {
+        scheduledExecutor.schedule(() -> schedulaTask(task), intervalloSecondi, TimeUnit.SECONDS);
+    }
+
     public void svuotaCoda() {
         codaTaskPronti.clear();
     }
-
-    public void schedulaTaskConRitardo(Task task, int intervalloSecondi) {
-        log.info("Retry task {} tra {} secondi.", task.getNome(), intervalloSecondi);
-        scheduledExecutor.schedule(() -> codaTaskPronti.offer(task), intervalloSecondi, TimeUnit.SECONDS);
-    }
+    
 
     private void assegnaTask() {
         while (inEsecuzione) {
@@ -91,8 +92,8 @@ public class Scheduler {
                 if (statoWf != EStatoWorkflow.IN_ESECUZIONE) {
                     continue;
                 }
-
-                log.info("Invio task {} a un esecutore.", task.getNome());
+                repositoryTask.update(task);
+                log.info("Invio task {} a un executor.", task.getNome());
                 threadPoolWorkers.submit(new Worker(task));
             } catch (InterruptedException e) {
                 log.warn("Thread dello scheduler interrotto.");

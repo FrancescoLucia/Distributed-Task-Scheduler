@@ -21,6 +21,6 @@ public class TaskRest {
     @GET
     @Path("/{id}")
     public TaskDTO getTask(@PathParam("id") Long id) {
-        return taskService.getTask(id);
+        return taskService.findById(id);
     }
 }

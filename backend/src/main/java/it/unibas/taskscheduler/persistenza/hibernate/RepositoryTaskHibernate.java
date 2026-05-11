@@ -21,4 +21,10 @@ public class RepositoryTaskHibernate implements IRepositoryTask {
         throw new UnsupportedOperationException("Unimplemented method 'trovaPerId'");
     }
 
+    @Override
+    public void update(Task task) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'update'");
+    }
+
 }
