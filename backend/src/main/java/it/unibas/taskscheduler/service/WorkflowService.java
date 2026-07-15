@@ -11,6 +11,7 @@ import it.unibas.taskscheduler.rest.dto.WorkflowDTO;
 import it.unibas.taskscheduler.rest.dto.WorkflowSummaryDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,22 +28,33 @@ public class WorkflowService {
     @Inject
     IRepositoryWorkflow repositoryWorkflow;
 
+    @Transactional
     public List<WorkflowSummaryDTO> listaWorkflow() {
-        return repositoryWorkflow.findAll().stream()
+        return repositoryWorkflow.findAllWorkflows().stream()
+                .peek(Workflow::ricostruisciFigli)
                 .map(WorkflowSummaryDTO::from)
                 .toList();
     }
 
+    @Transactional
     public WorkflowDTO getWorkflow(Long id) {
-        return repositoryWorkflow.findById(id)
+        return repositoryWorkflow.findByIdOptional(id)
+                .map(this::inizializzaGrafo)
                 .map(WorkflowDTO::from)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
     }
 
+    @Transactional
     public GraphDTO getGrafo(Long id) {
-        return repositoryWorkflow.findById(id)
+        return repositoryWorkflow.findByIdOptional(id)
+                .map(this::inizializzaGrafo)
                 .map(GraphDTO::from)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
+    }
+
+    private Workflow inizializzaGrafo(Workflow workflow) {
+        workflow.ricostruisciFigli();
+        return workflow;
     }
 
     private Task getTaskDemo(String nomeTask) {
@@ -76,6 +88,7 @@ public class WorkflowService {
         return workflow.getId();
     }
 
+    @Transactional
     public void avviaWorkflow(Long id) {
         repositoryWorkflow.getWorkflowInCorso().ifPresent(workflowInCorso -> {
             log.info("Workflow in corso: {}", workflowInCorso);
@@ -83,26 +96,34 @@ public class WorkflowService {
                 throw new IllegalArgumentException("Terminare prima il workflow in esecuzione");
             }
         });
-        Workflow workflow = repositoryWorkflow.findById(id).orElseThrow(() -> new NotFoundException("Workflow non trovato"));
+        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
+                .map(this::inizializzaGrafo)
+                .orElseThrow(() -> new NotFoundException("Workflow non trovato"));
         engine.avviaWorkflow(workflow);
     }
 
+    @Transactional
     public void pausaWorkflow(Long id) {
-        Workflow workflow = repositoryWorkflow.findById(id)
+        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
+                .map(this::inizializzaGrafo)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
         workflow.pausa();
         log.info("Workflow '{}' messo in pausa.", workflow.getNome());
     }
 
+    @Transactional
     public void riprendiWorkflow(Long id) {
-        Workflow workflow = repositoryWorkflow.findById(id)
+        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
+                .map(this::inizializzaGrafo)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
         workflow.riprendi();
         log.info("Workflow '{}' ripreso.", workflow.getNome());
     }
 
+    @Transactional
     public void annullaWorkflow(Long id) {
-        Workflow workflow = repositoryWorkflow.findById(id)
+        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
+                .map(this::inizializzaGrafo)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
         EStatoWorkflow stato = workflow.getStato();
         if (stato == EStatoWorkflow.COMPLETATO || stato == EStatoWorkflow.FALLITO || stato == EStatoWorkflow.ANNULLATO) {

@@ -14,6 +14,10 @@ public class ScriptCommand implements Command {
         this.comando = comando;
     }
 
+    public String getComando() {
+        return comando;
+    }
+
     @Override
     public void esegui() {
         try {

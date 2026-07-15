@@ -9,7 +9,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 @ApplicationScoped
 @DefaultBean
@@ -26,11 +25,8 @@ public class RepositoryTaskMock implements IRepositoryTask {
     }
 
     @Override
-    public Optional<Task> findById(Long id) {
+    public Optional<Task> findByIdOptional(Long id) {
         return Optional.ofNullable(tasks.get(id));
     }
 
-    @Override
-    public void update(Task task) {
-    }
 }

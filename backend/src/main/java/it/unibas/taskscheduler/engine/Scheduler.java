@@ -80,7 +80,7 @@ public class Scheduler {
                 Task task = codaTaskPronti.poll(500, TimeUnit.MILLISECONDS);
                 if (task == null) continue;
 
-                Workflow workflow = repositoryWorkflow.findById(task.getWorkflowId()).orElse(null);
+                Workflow workflow = repositoryWorkflow.findByIdOptional(task.getWorkflowId()).orElse(null);
                 if (workflow == null) continue;
 
                 EStatoWorkflow statoWf = workflow.getStato();
@@ -92,7 +92,6 @@ public class Scheduler {
                 if (statoWf != EStatoWorkflow.IN_ESECUZIONE) {
                     continue;
                 }
-                repositoryTask.update(task);
                 log.info("Invio task {} a un executor.", task.getNome());
                 threadPoolWorkers.submit(new Worker(task));
             } catch (InterruptedException e) {

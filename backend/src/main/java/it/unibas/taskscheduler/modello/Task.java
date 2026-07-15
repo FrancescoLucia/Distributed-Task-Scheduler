@@ -1,8 +1,27 @@
 package it.unibas.taskscheduler.modello;
 
+import it.unibas.taskscheduler.command.CommandMapper;
 import it.unibas.taskscheduler.observable.TaskObserver;
 import it.unibas.taskscheduler.command.Command;
 import it.unibas.taskscheduler.observable.Observable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -13,24 +32,82 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
-@EqualsAndHashCode(exclude = {"dipendenze", "figli", "observer"})
-@ToString(exclude = {"dipendenze", "figli", "observer"})
+@Entity
+@Table(name = "tasks")
+@EqualsAndHashCode(exclude = {"workflow", "dipendenze", "figli", "observer", "azione"})
+@ToString(exclude = {"workflow", "dipendenze", "figli", "observer", "azione"})
 public class Task implements Observable {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Transient
     private Long workflowId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "workflow_id", nullable = false)
+    private Workflow workflow;
+
+    @Column(nullable = false)
     private String nome;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private EStatoTask stato = EStatoTask.IN_ATTESA;
+
+    @Transient
     private Command azione;
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "task_dependencies",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "dependency_task_id")
+    )
     private List<Task> dipendenze = new ArrayList<>();
+
+    @Transient
     private List<Task> figli = new ArrayList<>();
+
+    @Column(nullable = false)
     private int tentativi = 0;
+
+    @Column(name = "command_type", nullable = false)
+    private String commandType;
+
+    @Column(name = "command_payload", nullable = false)
+    private String commandPayload;
 
     private transient List<TaskObserver> observer = new ArrayList<>();
 
     public Task(String nome, Command azione) {
         this.nome = nome;
+        setAzione(azione);
+    }
+
+    public Long getWorkflowId() {
+        if (workflow != null) {
+            return workflow.getId();
+        }
+        return workflowId;
+    }
+
+    public void setWorkflowId(Long workflowId) {
+        this.workflowId = workflowId;
+    }
+
+    public void setWorkflow(Workflow workflow) {
+        this.workflow = workflow;
+        this.workflowId = workflow != null ? workflow.getId() : null;
+    }
+
+    public void setAzione(Command azione) {
         this.azione = azione;
+        if (azione != null) {
+            this.commandType = CommandMapper.typeOf(azione);
+            this.commandPayload = CommandMapper.payloadOf(azione);
+        }
     }
 
     public void setStato(EStatoTask nuovoStato) {
@@ -82,10 +159,12 @@ public class Task implements Observable {
     }
 
     public void esegui() {
+        inizializzaAzione();
         this.azione.esegui();
     }
 
     public void annulla() {
+        inizializzaAzione();
         this.azione.annulla();
     }
 
@@ -95,5 +174,28 @@ public class Task implements Observable {
 
     public boolean isInEsecuzione() {
         return this.stato.equals(EStatoTask.IN_ESECUZIONE);
+    }
+
+    @PrePersist
+    @PreUpdate
+    void sincronizzaComandoPersistente() {
+        if (azione != null) {
+            this.commandType = CommandMapper.typeOf(azione);
+            this.commandPayload = CommandMapper.payloadOf(azione);
+        }
+    }
+
+    @PostLoad
+    void inizializzaDopoLoad() {
+        this.workflowId = workflow != null ? workflow.getId() : workflowId;
+        this.figli = new ArrayList<>();
+        this.observer = new ArrayList<>();
+        inizializzaAzione();
+    }
+
+    public void inizializzaAzione() {
+        if (azione == null && commandType != null && commandPayload != null) {
+            this.azione = CommandMapper.from(commandType, commandPayload);
+        }
     }
 }

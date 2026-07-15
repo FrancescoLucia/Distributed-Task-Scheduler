@@ -2,21 +2,30 @@ package it.unibas.taskscheduler.persistenza.hibernate;
 
 import java.util.Optional;
 
+import io.quarkus.arc.properties.IfBuildProperty;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import it.unibas.taskscheduler.modello.ConfigurazioneEngine;
 import it.unibas.taskscheduler.persistenza.IRepositoryConfigurazioneEngine;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
-public class RepositoryConfigurazioneEngineHibernate implements IRepositoryConfigurazioneEngine{
+@IfBuildProperty(name = "dao.strategy", stringValue = "hibernate")
+@ApplicationScoped
+public class RepositoryConfigurazioneEngineHibernate
+        implements IRepositoryConfigurazioneEngine, PanacheRepository<ConfigurazioneEngine> {
 
     @Override
+    @Transactional
     public void persist(ConfigurazioneEngine configurazione) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'persist'");
+        configurazione.setId(ConfigurazioneEngine.SINGLETON_ID);
+        find().ifPresentOrElse(
+                configurazioneEsistente -> configurazioneEsistente.setRetryPolicy(configurazione.getRetryPolicy()),
+                () -> PanacheRepository.super.persist(configurazione));
     }
 
     @Override
+    @Transactional
     public Optional<ConfigurazioneEngine> find() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'find'");
+        return findByIdOptional(ConfigurazioneEngine.SINGLETON_ID);
     }
-
 }

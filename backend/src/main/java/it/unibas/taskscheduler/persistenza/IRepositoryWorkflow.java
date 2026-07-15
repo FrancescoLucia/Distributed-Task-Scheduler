@@ -8,9 +8,9 @@ public interface IRepositoryWorkflow {
 
     public void persist(Workflow workflow);
 
-    public Optional<Workflow> findById(Long id);
+    public Optional<Workflow> findByIdOptional(Long id);
 
     public Optional<Workflow> getWorkflowInCorso();
 
-    public Collection<Workflow> findAll();
+    public Collection<Workflow> findAllWorkflows();
 }
