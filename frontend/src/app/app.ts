@@ -11,8 +11,10 @@ import { MatListModule } from '@angular/material/list';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule, MatTabGroup, MatTab } from '@angular/material/tabs';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { WorkflowService, EStatoWorkflow, EStatoTask } from './dati-runtime-workflow.service';
+import { ConfigDialogComponent } from './components/config-dialog-component/config-dialog.component';
 import { SezioneAvanzamentoComponent } from './components/sezione-avanzamento-component/sezione-avanzamento.component';
 import { SezioneGrafoComponent } from './components/sezione-grafo-component/sezione-grafo.component';
 
@@ -31,6 +33,7 @@ import { SezioneGrafoComponent } from './components/sezione-grafo-component/sezi
     MatProgressSpinnerModule,
     MatToolbarModule,
     MatTooltipModule,
+    MatDialogModule,
     SezioneGrafoComponent,
     SezioneAvanzamentoComponent,
     MatTabGroup,
@@ -41,6 +44,7 @@ import { SezioneGrafoComponent } from './components/sezione-grafo-component/sezi
 })
 export class App implements OnInit {
   private readonly servizioWorkflow = inject(WorkflowService);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly statoEngine = this.servizioWorkflow.statoEngine;
   protected readonly listaWorkflow = this.servizioWorkflow.listaWorkflow;
@@ -67,6 +71,10 @@ export class App implements OnInit {
   ngOnInit(): void {
     this.servizioWorkflow.caricaListaWorkflow();
     this.servizioWorkflow.ripristinaSeAttivo();
+  }
+
+  protected apriConfigurazione(): void {
+    this.dialog.open(ConfigDialogComponent);
   }
 
   protected importaWorkflow(): void {

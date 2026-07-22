@@ -1,0 +1,45 @@
+<div class="intestazione-config">
+  <h2 mat-dialog-title>Configurazione engine</h2>
+  @if (!modificaAbilitata()) {
+    <button mat-stroked-button type="button" color="primary" class="bottone-modifica" (click)="abilitaModifica()">
+      <mat-icon aria-hidden="true">edit</mat-icon>
+      Modifica
+    </button>
+  }
+</div>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="modulo-config">
+    <mat-form-field appearance="outline">
+      <mat-label>Numero massimo tentativi</mat-label>
+      <input matInput type="number" min="0" formControlName="maxTentativi" />
+      @if (form.controls.maxTentativi.hasError('min')) {
+        <mat-error>Il valore non può essere negativo</mat-error>
+      } @else if (form.controls.maxTentativi.hasError('required')) {
+        <mat-error>Campo obbligatorio</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Attesa prima di riprovare</mat-label>
+      <input matInput type="number" min="0" formControlName="intervallo" />
+      <span matTextSuffix>secondi</span>
+      @if (form.controls.intervallo.hasError('min')) {
+        <mat-error>Il valore non può essere negativo</mat-error>
+      } @else if (form.controls.intervallo.hasError('required')) {
+        <mat-error>Campo obbligatorio</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="annulla()">
+    {{ modificaAbilitata() ? 'Annulla' : 'Chiudi' }}
+  </button>
+  @if (modificaAbilitata()) {
+    <button mat-flat-button type="button" color="primary" [disabled]="form.invalid" (click)="salva()">
+      Applica
+    </button>
+  }
+</mat-dialog-actions>

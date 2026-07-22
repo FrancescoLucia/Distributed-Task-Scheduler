@@ -7,6 +7,9 @@
       {{ etichettaStato(statoEngine()!.stato) }}
     </span>
   }
+  <button mat-icon-button type="button" matTooltip="Configurazione" (click)="apriConfigurazione()">
+    <mat-icon aria-hidden="true">settings</mat-icon>
+  </button>
 </mat-toolbar>
 
 <main class="dashboard">

@@ -101,8 +101,13 @@ export class WorkflowService {
   }
 
   caricaConfigurazione(): void {
-    this.http.get<ConfigurazioneEngine>(`${BASE_URL}/engine/configurazione`)
-      .subscribe(c => this.configurazioneEngine.set(c));
+    this.getConfigurazione().subscribe();
+  }
+
+  getConfigurazione(): Observable<ConfigurazioneEngine> {
+    return this.http.get<ConfigurazioneEngine>(`${BASE_URL}/engine/configurazione`).pipe(
+      tap(c => this.configurazioneEngine.set(c))
+    );
   }
 
   aggiornaConfigurazione(config: ConfigurazioneEngine): Observable<void> {

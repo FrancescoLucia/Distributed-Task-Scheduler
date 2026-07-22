@@ -1,0 +1,28 @@
+.intestazione-config {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 8px 0;
+}
+
+.intestazione-config h2 {
+  margin: 0;
+}
+
+.bottone-modifica {
+  flex: 0 0 auto;
+}
+
+.modulo-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 420px;
+  max-width: 100%;
+  padding-top: 8px;
+}
+
+.modulo-config mat-form-field {
+  width: 100%;
+}
