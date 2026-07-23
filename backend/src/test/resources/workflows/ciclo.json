@@ -1,0 +1,8 @@
+{
+  "nome": "Ciclo Test",
+  "tasks": [
+    { "nome": "A", "tipo": "SCRIPT", "parametri": { "comando": "echo A" }, "dipendenze": ["C"] },
+    { "nome": "B", "tipo": "SCRIPT", "parametri": { "comando": "echo B" }, "dipendenze": ["A"] },
+    { "nome": "C", "tipo": "SCRIPT", "parametri": { "comando": "echo C" }, "dipendenze": ["B"] }
+  ]
+}
