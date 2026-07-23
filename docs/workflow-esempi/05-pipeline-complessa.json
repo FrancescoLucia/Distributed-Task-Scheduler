@@ -1,0 +1,224 @@
+{
+  "nome": "Esempio 05 - Pipeline complessa",
+  "tasks": [
+    {
+      "nome": "Checkout monorepo",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Checkout monorepo'"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Lint codice",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Lint completato'"
+      },
+      "dipendenze": [
+        "Checkout monorepo"
+      ]
+    },
+    {
+      "nome": "Unit test",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Unit test completati'"
+      },
+      "dipendenze": [
+        "Checkout monorepo"
+      ]
+    },
+    {
+      "nome": "Security scan",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://example.com",
+        "metodo": "GET"
+      },
+      "dipendenze": [
+        "Checkout monorepo"
+      ]
+    },
+    {
+      "nome": "Controllo schema dati",
+      "tipo": "MATH",
+      "parametri": {
+        "operazione": "FATTORIALE",
+        "n": 10
+      },
+      "dipendenze": [
+        "Checkout monorepo"
+      ]
+    },
+    {
+      "nome": "Build servizio API",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Build servizio API'"
+      },
+      "dipendenze": [
+        "Lint codice",
+        "Unit test",
+        "Security scan",
+        "Controllo schema dati"
+      ]
+    },
+    {
+      "nome": "Build servizio worker",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Build servizio worker'"
+      },
+      "dipendenze": [
+        "Lint codice",
+        "Unit test",
+        "Security scan",
+        "Controllo schema dati"
+      ]
+    },
+    {
+      "nome": "Build frontend",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Build frontend'"
+      },
+      "dipendenze": [
+        "Lint codice",
+        "Unit test",
+        "Security scan",
+        "Controllo schema dati"
+      ]
+    },
+    {
+      "nome": "Package servizio API",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/task-scheduler-05-api.txt",
+        "contenuto": "artifact=api\n"
+      },
+      "dipendenze": [
+        "Build servizio API"
+      ]
+    },
+    {
+      "nome": "Package servizio worker",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/task-scheduler-05-worker.txt",
+        "contenuto": "artifact=worker\n"
+      },
+      "dipendenze": [
+        "Build servizio worker"
+      ]
+    },
+    {
+      "nome": "Package frontend",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/task-scheduler-05-frontend.txt",
+        "contenuto": "artifact=frontend\n"
+      },
+      "dipendenze": [
+        "Build frontend"
+      ]
+    },
+    {
+      "nome": "Contract test",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://example.com",
+        "metodo": "GET"
+      },
+      "dipendenze": [
+        "Build servizio API",
+        "Build frontend"
+      ]
+    },
+    {
+      "nome": "Load test",
+      "tipo": "MATH",
+      "parametri": {
+        "operazione": "SOMMA_PRIMI",
+        "n": 5000
+      },
+      "dipendenze": [
+        "Build servizio API",
+        "Build servizio worker",
+        "Build frontend"
+      ]
+    },
+    {
+      "nome": "Integration test",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Integration test completati'"
+      },
+      "dipendenze": [
+        "Package servizio API",
+        "Package servizio worker",
+        "Package frontend",
+        "Contract test"
+      ]
+    },
+    {
+      "nome": "Deploy staging",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Deploy staging completato'"
+      },
+      "dipendenze": [
+        "Integration test",
+        "Load test"
+      ]
+    },
+    {
+      "nome": "Smoke test staging",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://example.com",
+        "metodo": "GET"
+      },
+      "dipendenze": [
+        "Deploy staging"
+      ]
+    },
+    {
+      "nome": "Deploy produzione",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Deploy produzione completato'"
+      },
+      "dipendenze": [
+        "Smoke test staging"
+      ]
+    },
+    {
+      "nome": "Notifica team",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://httpbin.org/post",
+        "metodo": "POST",
+        "corpo": "{\"workflow\":\"pipeline-complessa\",\"stato\":\"deploy-prod-ok\"}"
+      },
+      "dipendenze": [
+        "Deploy produzione"
+      ]
+    },
+    {
+      "nome": "Aggiornamento changelog",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "APPEND",
+        "path": "/tmp/task-scheduler-05-changelog.txt",
+        "contenuto": "Deploy produzione completato\n"
+      },
+      "dipendenze": [
+        "Deploy produzione"
+      ]
+    }
+  ]
+}

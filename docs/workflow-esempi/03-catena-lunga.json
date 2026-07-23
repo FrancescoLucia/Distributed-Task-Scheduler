@@ -1,0 +1,112 @@
+{
+  "nome": "Esempio 03 - Catena lunga",
+  "tasks": [
+    {
+      "nome": "Calcolo iniziale",
+      "tipo": "MATH",
+      "parametri": {
+        "operazione": "SOMMA_PRIMI",
+        "n": 200
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Preparazione ambiente",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Workflow 03: prepara'"
+      },
+      "dipendenze": [
+        "Calcolo iniziale"
+      ]
+    },
+    {
+      "nome": "Scrittura file iniziale",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/task-scheduler-03-catena.txt",
+        "contenuto": "Workflow 03: inizio catena\n"
+      },
+      "dipendenze": [
+        "Preparazione ambiente"
+      ]
+    },
+    {
+      "nome": "Verifica HTTP",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://example.com",
+        "metodo": "GET"
+      },
+      "dipendenze": [
+        "Scrittura file iniziale"
+      ]
+    },
+    {
+      "nome": "Append file dopo HTTP",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "APPEND",
+        "path": "/tmp/task-scheduler-03-catena.txt",
+        "contenuto": "Workflow 03: append dopo HTTP\n"
+      },
+      "dipendenze": [
+        "Verifica HTTP"
+      ]
+    },
+    {
+      "nome": "Calcolo intermedio",
+      "tipo": "MATH",
+      "parametri": {
+        "operazione": "FIBONACCI",
+        "n": 16
+      },
+      "dipendenze": [
+        "Append file dopo HTTP"
+      ]
+    },
+    {
+      "nome": "Build simulata",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Workflow 03: build simulata'"
+      },
+      "dipendenze": [
+        "Calcolo intermedio"
+      ]
+    },
+    {
+      "nome": "Lettura file",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "LEGGI",
+        "path": "/tmp/task-scheduler-03-catena.txt"
+      },
+      "dipendenze": [
+        "Build simulata"
+      ]
+    },
+    {
+      "nome": "Verifica HTTP finale",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://example.com",
+        "metodo": "GET"
+      },
+      "dipendenze": [
+        "Lettura file"
+      ]
+    },
+    {
+      "nome": "Report finale",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Workflow 03: report finale'"
+      },
+      "dipendenze": [
+        "Verifica HTTP finale"
+      ]
+    }
+  ]
+}

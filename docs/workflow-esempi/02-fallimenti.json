@@ -1,0 +1,62 @@
+{
+  "nome": "Esempio 02 - Fallimenti e blocchi",
+  "tasks": [
+    {
+      "nome": "Script con fallimento",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Workflow 02: fallimento script intenzionale' && exit 1"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Lettura file mancante",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "LEGGI",
+        "path": "/tmp/non-esiste-task-scheduler-02.txt"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Richiesta HTTP con errore 500",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://httpbin.org/status/500",
+        "metodo": "GET"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Task discendente bloccato",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "echo 'Questo task non dovrebbe essere eseguito'"
+      },
+      "dipendenze": [
+        "Script con fallimento"
+      ]
+    },
+    {
+      "nome": "Calcolo ramo indipendente",
+      "tipo": "MATH",
+      "parametri": {
+        "operazione": "FATTORIALE",
+        "n": 8
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Artefatto ramo indipendente",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/task-scheduler-02-ramo-ok.txt",
+        "contenuto": "Workflow 02: ramo indipendente completato\n"
+      },
+      "dipendenze": [
+        "Calcolo ramo indipendente"
+      ]
+    }
+  ]
+}

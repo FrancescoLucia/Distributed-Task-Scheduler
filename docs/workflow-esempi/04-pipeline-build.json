@@ -1,0 +1,119 @@
+{
+  "nome": "Esempio 04 - Pipeline build BE FE",
+  "tasks": [
+    {
+      "nome": "Checkout sorgenti",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Checkout sorgenti Task Scheduler'"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Risoluzione dipendenze backend",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Backend: risoluzione dipendenze Gradle simulata'"
+      },
+      "dipendenze": [
+        "Checkout sorgenti"
+      ]
+    },
+    {
+      "nome": "Build backend",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Backend: build simulata'"
+      },
+      "dipendenze": [
+        "Risoluzione dipendenze backend"
+      ]
+    },
+    {
+      "nome": "Test backend",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Backend: test simulati'"
+      },
+      "dipendenze": [
+        "Build backend"
+      ]
+    },
+    {
+      "nome": "Install dipendenze frontend",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Frontend: install dipendenze simulata'"
+      },
+      "dipendenze": [
+        "Checkout sorgenti"
+      ]
+    },
+    {
+      "nome": "Build frontend",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Frontend: build simulata'"
+      },
+      "dipendenze": [
+        "Install dipendenze frontend"
+      ]
+    },
+    {
+      "nome": "Test frontend",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Frontend: test simulati'"
+      },
+      "dipendenze": [
+        "Build frontend"
+      ]
+    },
+    {
+      "nome": "Creazione artifact build",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/build-manifest.txt",
+        "contenuto": "Task Scheduler build manifest\nbackend=ok\nfrontend=ok\n"
+      },
+      "dipendenze": [
+        "Test backend",
+        "Test frontend"
+      ]
+    },
+    {
+      "nome": "Healthcheck artifact",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://example.com",
+        "metodo": "GET"
+      },
+      "dipendenze": [
+        "Creazione artifact build"
+      ]
+    },
+    {
+      "nome": "Notifica completamento build",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://httpbin.org/post",
+        "metodo": "POST",
+        "corpo": "{\"workflow\":\"pipeline-build\",\"stato\":\"ok\"}"
+      },
+      "dipendenze": [
+        "Healthcheck artifact"
+      ]
+    },
+    {
+      "nome": "Report pipeline build",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Pipeline BE/FE completata'"
+      },
+      "dipendenze": [
+        "Notifica completamento build"
+      ]
+    }
+  ]
+}

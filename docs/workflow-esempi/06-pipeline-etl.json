@@ -1,0 +1,176 @@
+{
+  "nome": "Esempio 06 - Pipeline ETL",
+  "tasks": [
+    {
+      "nome": "Extract clienti",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Extract clienti da CRM simulato'"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Extract ordini",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://httpbin.org/get?dataset=ordini",
+        "metodo": "GET"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Extract prodotti",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Extract catalogo prodotti da ERP simulato'"
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Staging clienti",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/etl-clienti.csv",
+        "contenuto": "id,nome,segmento\n1,Ada,enterprise\n2,Linus,smb\n"
+      },
+      "dipendenze": [
+        "Extract clienti"
+      ]
+    },
+    {
+      "nome": "Staging ordini",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/etl-ordini.csv",
+        "contenuto": "id,cliente_id,prodotto_id,totale\n100,1,10,250.50\n101,2,11,89.90\n"
+      },
+      "dipendenze": [
+        "Extract ordini"
+      ]
+    },
+    {
+      "nome": "Staging prodotti",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/etl-prodotti.csv",
+        "contenuto": "id,nome,categoria\n10,Licenza SaaS,software\n11,Supporto,servizi\n"
+      },
+      "dipendenze": [
+        "Extract prodotti"
+      ]
+    },
+    {
+      "nome": "Controllo qualità clienti",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "LEGGI",
+        "path": "/tmp/etl-clienti.csv"
+      },
+      "dipendenze": [
+        "Staging clienti"
+      ]
+    },
+    {
+      "nome": "Controllo qualità ordini",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "LEGGI",
+        "path": "/tmp/etl-ordini.csv"
+      },
+      "dipendenze": [
+        "Staging ordini"
+      ]
+    },
+    {
+      "nome": "Controllo qualità prodotti",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "LEGGI",
+        "path": "/tmp/etl-prodotti.csv"
+      },
+      "dipendenze": [
+        "Staging prodotti"
+      ]
+    },
+    {
+      "nome": "Transform anagrafiche clienti",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Normalizzazione anagrafiche e deduplica clienti'"
+      },
+      "dipendenze": [
+        "Controllo qualità clienti"
+      ]
+    },
+    {
+      "nome": "Transform metriche vendite",
+      "tipo": "MATH",
+      "parametri": {
+        "operazione": "SOMMA_PRIMI",
+        "n": 340
+      },
+      "dipendenze": [
+        "Controllo qualità ordini"
+      ]
+    },
+    {
+      "nome": "Transform catalogo prodotti",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Arricchimento categorie prodotto'"
+      },
+      "dipendenze": [
+        "Controllo qualità prodotti"
+      ]
+    },
+    {
+      "nome": "Join fatti vendita",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 2 && echo 'Join ordini-clienti-prodotti e calcolo fact table vendite'"
+      },
+      "dipendenze": [
+        "Transform anagrafiche clienti",
+        "Transform metriche vendite",
+        "Transform catalogo prodotti"
+      ]
+    },
+    {
+      "nome": "Load data warehouse",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/etl-datawarehouse-load.txt",
+        "contenuto": "tabella=fact_vendite\nrighe=2\ntotale=340.40\nstato=loaded\n"
+      },
+      "dipendenze": [
+        "Join fatti vendita"
+      ]
+    },
+    {
+      "nome": "Publish metriche vendite",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://httpbin.org/post",
+        "metodo": "POST",
+        "corpo": "{\"pipeline\":\"etl\",\"dataset\":\"vendite\",\"righe\":2,\"totale\":340.40}"
+      },
+      "dipendenze": [
+        "Load data warehouse"
+      ]
+    },
+    {
+      "nome": "Report finale ETL",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Pipeline ETL completata: extract, transform, load e publish metriche'"
+      },
+      "dipendenze": [
+        "Publish metriche vendite"
+      ]
+    }
+  ]
+}

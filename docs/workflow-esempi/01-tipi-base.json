@@ -1,0 +1,58 @@
+{
+  "nome": "Esempio 01 - Tipi base",
+  "tasks": [
+    {
+      "nome": "Calcolo Fibonacci",
+      "tipo": "MATH",
+      "parametri": {
+        "operazione": "FIBONACCI",
+        "n": 12
+      },
+      "dipendenze": []
+    },
+    {
+      "nome": "Scrittura output",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "SCRIVI",
+        "path": "/tmp/task-scheduler-01-output.txt",
+        "contenuto": "Workflow 01: output generato dal task FILE SCRIVI\n"
+      },
+      "dipendenze": [
+        "Calcolo Fibonacci"
+      ]
+    },
+    {
+      "nome": "Richiesta HTTP esempio",
+      "tipo": "HTTP",
+      "parametri": {
+        "url": "https://example.com",
+        "metodo": "GET"
+      },
+      "dipendenze": [
+        "Calcolo Fibonacci"
+      ]
+    },
+    {
+      "nome": "Script di conferma",
+      "tipo": "SCRIPT",
+      "parametri": {
+        "comando": "sleep 1 && echo 'Workflow 01: script completato'"
+      },
+      "dipendenze": [
+        "Calcolo Fibonacci"
+      ]
+    },
+    {
+      "nome": "Lettura output",
+      "tipo": "FILE",
+      "parametri": {
+        "operazione": "LEGGI",
+        "path": "/tmp/task-scheduler-01-output.txt"
+      },
+      "dipendenze": [
+        "Scrittura output"
+      ]
+    }
+  ]
+}
