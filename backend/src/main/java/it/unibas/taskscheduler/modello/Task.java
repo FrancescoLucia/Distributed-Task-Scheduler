@@ -34,8 +34,8 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "tasks")
-@EqualsAndHashCode(exclude = {"workflow", "dipendenze", "figli", "observer", "azione"})
-@ToString(exclude = {"workflow", "dipendenze", "figli", "observer", "azione"})
+@EqualsAndHashCode(exclude = {"esecuzione", "dipendenze", "figli", "observer", "azione"})
+@ToString(exclude = {"esecuzione", "dipendenze", "figli", "observer", "azione"})
 public class Task implements Observable {
 
     @Id
@@ -43,11 +43,11 @@ public class Task implements Observable {
     private Long id;
 
     @Transient
-    private Long workflowId;
+    private Long esecuzioneId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workflow_id", nullable = false)
-    private Workflow workflow;
+    @JoinColumn(name = "esecuzione_id", nullable = false)
+    private EsecuzioneWorkflow esecuzione;
 
     @Column(nullable = false)
     private String nome;
@@ -86,20 +86,20 @@ public class Task implements Observable {
         setAzione(azione);
     }
 
-    public Long getWorkflowId() {
-        if (workflow != null) {
-            return workflow.getId();
+    public Long getEsecuzioneId() {
+        if (esecuzione != null) {
+            return esecuzione.getId();
         }
-        return workflowId;
+        return esecuzioneId;
     }
 
-    public void setWorkflowId(Long workflowId) {
-        this.workflowId = workflowId;
+    public void setEsecuzioneId(Long esecuzioneId) {
+        this.esecuzioneId = esecuzioneId;
     }
 
-    public void setWorkflow(Workflow workflow) {
-        this.workflow = workflow;
-        this.workflowId = workflow != null ? workflow.getId() : null;
+    public void setEsecuzione(EsecuzioneWorkflow esecuzione) {
+        this.esecuzione = esecuzione;
+        this.esecuzioneId = esecuzione != null ? esecuzione.getId() : null;
     }
 
     public void setAzione(Command azione) {
@@ -187,7 +187,7 @@ public class Task implements Observable {
 
     @PostLoad
     void inizializzaDopoLoad() {
-        this.workflowId = workflow != null ? workflow.getId() : workflowId;
+        this.esecuzioneId = esecuzione != null ? esecuzione.getId() : esecuzioneId;
         this.figli = new ArrayList<>();
         this.observer = new ArrayList<>();
         inizializzaAzione();

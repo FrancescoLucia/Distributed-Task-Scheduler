@@ -55,14 +55,39 @@ h1 {
 
 .griglia-dashboard {
   display: grid;
-  grid-template-columns: minmax(260px, 0.85fr) minmax(280px, 1fr);
+  grid-template-columns: 1fr;
   gap: 18px;
   margin-bottom: 18px;
 }
 
-.tab-full-width {
-  grid-column: 1 / -1;
-  width: 100%;
+.griglia-dashboard > * {
+  min-width: 0;
+}
+
+.riepilogo-avanzamento {
+  padding: 0 16px;
+}
+
+.riga-riepilogo {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.percentuale {
+  color: #12343b;
+  font: var(--mat-sys-headline-small);
+}
+
+.dettaglio {
+  color: #5f6f76;
+  font: var(--mat-sys-body-medium);
+}
+
+.conteggio-errori {
+  color: #b4232a;
+  font-weight: 600;
 }
 
 .scheda-elenco mat-list-item {

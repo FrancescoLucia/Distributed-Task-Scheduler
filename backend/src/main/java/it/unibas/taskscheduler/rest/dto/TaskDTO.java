@@ -10,7 +10,7 @@ import java.util.List;
 public class TaskDTO {
 
     private Long id;
-    private Long workflowId;
+    private Long esecuzioneId;
     private String nome;
     private EStatoTask stato;
     private int tentativi;
@@ -20,7 +20,7 @@ public class TaskDTO {
     public static TaskDTO from(Task task) {
         TaskDTO dto = new TaskDTO();
         dto.id = task.getId();
-        dto.workflowId = task.getWorkflowId();
+        dto.esecuzioneId = task.getEsecuzioneId();
         dto.nome = task.getNome();
         dto.stato = task.getStato();
         dto.tentativi = task.getTentativi();

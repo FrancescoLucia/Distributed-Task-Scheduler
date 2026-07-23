@@ -1,26 +1,40 @@
 <mat-card class="scheda-catalogo">
   <mat-card-header>
     <mat-card-title>Catalogo workflow</mat-card-title>
-    <mat-card-subtitle>{{ listaWorkflow().length }} disponibili</mat-card-subtitle>
+    <mat-card-subtitle>{{ catalogo().length }} disponibili</mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    @if (listaWorkflow().length === 0) {
-      <p class="testo-vuoto">Nessun workflow importato.</p>
+    @if (engineOccupato()) {
+      <div class="avviso-engine">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <span>Un esecuzione è in corso. In questo momento non è possibile avviare un nuovo workflow.</span>
+      </div>
+    }
+
+    <mat-form-field appearance="outline" class="campo-ricerca">
+      <mat-label>Cerca per nome</mat-label>
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+      <input matInput type="text" [formControl]="ricerca" />
+    </mat-form-field>
+
+    @if (catalogo().length === 0) {
+      <p class="testo-vuoto">Nessun workflow nel catalogo.</p>
     } @else {
       <mat-list>
-        @for (workflow of listaWorkflow(); track workflow.id) {
+        @for (workflow of catalogo(); track workflow.id) {
           <mat-list-item>
-            <mat-icon matListItemIcon [class]="'icona-' + workflow.stato">account_tree</mat-icon>
+            <mat-icon matListItemIcon>account_tree</mat-icon>
             <div matListItemTitle>{{ workflow.nome }}</div>
             <div matListItemLine>
-              {{ etichettaStato(workflow.stato) }} · {{ workflow.taskCompletati }}/{{ workflow.taskTotali }} task
+              {{ workflow.dataCreazione | date:'dd/MM/yyyy HH:mm' }} · {{ workflow.numeroTask }} task
             </div>
-            <div matListItemMeta>
-              @if (workflow.stato === 'IN_PAUSA') {
-                <button mat-icon-button type="button" matTooltip="Avvia workflow" (click)="avviaWorkflow(workflow.id)">
-                  <mat-icon>play_arrow</mat-icon>
-                </button>
-              }
+            <div matListItemMeta class="azioni-riga">
+              <button mat-icon-button type="button" matTooltip="Avvia workflow" [disabled]="engineOccupato()" (click)="avviaWorkflow(workflow)">
+                <mat-icon>play_arrow</mat-icon>
+              </button>
+              <button mat-icon-button type="button" class="azione-elimina" matTooltip="Elimina workflow" (click)="eliminaWorkflow(workflow)">
+                <mat-icon>delete</mat-icon>
+              </button>
             </div>
           </mat-list-item>
           <mat-divider></mat-divider>

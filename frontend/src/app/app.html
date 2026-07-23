@@ -3,6 +3,7 @@
   <span>Task Scheduler</span>
   <span class="spaziatore"></span>
   @if (statoEngine()?.stato) {
+    <span class="etichetta-stato-engine">Stato Engine:</span>
     <span class="stato-toolbar" [class]="'stato-toolbar stato-' + statoEngine()!.stato">
       {{ etichettaStato(statoEngine()!.stato) }}
     </span>
@@ -13,7 +14,7 @@
 </mat-toolbar>
 
 <main class="dashboard">
-  <mat-tab-group class="tab-principali">
+  <mat-tab-group class="tab-principali" (selectedTabChange)="onCambioTab($event)">
     <mat-tab label="Catalogo workflow">
       <app-sezione-catalogo></app-sezione-catalogo>
     </mat-tab>
@@ -23,10 +24,7 @@
     </mat-tab>
 
     <mat-tab label="Esecuzioni passate">
-      <div class="stato-vuoto">
-        <mat-icon>history</mat-icon>
-        <p>Nessuna esecuzione passata</p>
-      </div>
+      <app-sezione-storico></app-sezione-storico>
     </mat-tab>
   </mat-tab-group>
 </main>

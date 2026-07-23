@@ -5,13 +5,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTabGroup, MatTab } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { WorkflowService } from '../../dati-runtime-workflow.service';
 import { etichettaStato } from '../../etichette';
-import { SezioneAvanzamentoComponent } from '../sezione-avanzamento-component/sezione-avanzamento.component';
 import { SezioneGrafoComponent } from '../sezione-grafo-component/sezione-grafo.component';
 
 @Component({
@@ -24,11 +23,9 @@ import { SezioneGrafoComponent } from '../sezione-grafo-component/sezione-grafo.
     MatDividerModule,
     MatIconModule,
     MatListModule,
+    MatProgressBarModule,
     MatProgressSpinnerModule,
-    MatTabGroup,
-    MatTab,
     MatTooltipModule,
-    SezioneAvanzamentoComponent,
     SezioneGrafoComponent,
   ],
   templateUrl: './sezione-esecuzione.component.html',
@@ -60,17 +57,17 @@ export class SezioneEsecuzioneComponent {
   );
 
   protected mettiInPausa(): void {
-    const id = this.servizioWorkflow.idWorkflowAttivo();
+    const id = this.servizioWorkflow.esecuzioneAttivaId();
     if (id !== null) this.servizioWorkflow.mettiInPausa(id).subscribe();
   }
 
   protected riprendi(): void {
-    const id = this.servizioWorkflow.idWorkflowAttivo();
+    const id = this.servizioWorkflow.esecuzioneAttivaId();
     if (id !== null) this.servizioWorkflow.riprendi(id).subscribe();
   }
 
   protected annullaWorkflow(): void {
-    const id = this.servizioWorkflow.idWorkflowAttivo();
+    const id = this.servizioWorkflow.esecuzioneAttivaId();
     if (id !== null) this.servizioWorkflow.annulla(id).subscribe();
   }
 }

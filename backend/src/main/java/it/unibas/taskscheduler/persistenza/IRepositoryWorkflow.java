@@ -8,11 +8,9 @@ public interface IRepositoryWorkflow {
 
     public void persist(Workflow workflow);
 
-    public void aggiornaStato(Workflow workflow);
-
     public Optional<Workflow> findByIdOptional(Long id);
 
-    public Optional<Workflow> getWorkflowInCorso();
+    public Collection<Workflow> findAll(String filtroNome);
 
-    public Collection<Workflow> findAllWorkflows();
+    public void delete(Long id);
 }

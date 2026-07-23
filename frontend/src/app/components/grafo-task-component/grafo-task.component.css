@@ -1,9 +1,12 @@
 :host {
   display: block;
+  min-width: 0;
 }
 
 .contenitore-grafo {
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
   min-height: 420px;
   height: clamp(420px, 58vh, 640px);
   border: 1px solid #ebeff1;

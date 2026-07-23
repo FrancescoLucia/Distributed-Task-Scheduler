@@ -1,0 +1,12 @@
+<h2 mat-dialog-title>{{ dati.titolo }}</h2>
+
+<mat-dialog-content>
+  <p>{{ dati.messaggio }}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="annulla()">Annulla</button>
+  <button mat-flat-button type="button" [color]="dati.pericolo ? 'warn' : 'primary'" (click)="conferma()">
+    {{ dati.testoConferma }}
+  </button>
+</mat-dialog-actions>

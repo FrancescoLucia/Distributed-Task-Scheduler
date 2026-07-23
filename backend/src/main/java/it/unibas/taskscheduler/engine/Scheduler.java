@@ -78,15 +78,15 @@ public class Scheduler {
                 Task task = codaTaskPronti.poll(500, TimeUnit.MILLISECONDS);
                 if (task == null) continue;
 
-                EStatoWorkflow statoWorkflow = engine.statoWorkflow(task.getWorkflowId());
-                if (statoWorkflow == null) continue;
+                EStatoWorkflow statoEsecuzione = engine.statoEsecuzione(task.getEsecuzioneId());
+                if (statoEsecuzione == null) continue;
 
-                if (statoWorkflow == EStatoWorkflow.IN_PAUSA) {
+                if (statoEsecuzione == EStatoWorkflow.IN_PAUSA) {
                     codaTaskPronti.offer(task);
                     Thread.sleep(200);
                     continue;
                 }
-                if (statoWorkflow != EStatoWorkflow.IN_ESECUZIONE) {
+                if (statoEsecuzione != EStatoWorkflow.IN_ESECUZIONE) {
                     continue;
                 }
                 log.info("Invio task {} a un executor.", task.getNome());

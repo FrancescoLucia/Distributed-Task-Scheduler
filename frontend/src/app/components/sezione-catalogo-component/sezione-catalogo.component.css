@@ -16,6 +16,22 @@ mat-card-subtitle {
   color: #5f6f76;
 }
 
+.avviso-engine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fff1d6;
+  color: #9a5b00;
+  font: var(--mat-sys-body-medium);
+}
+
+.campo-ricerca {
+  width: 100%;
+}
+
 .testo-vuoto {
   margin: 0;
   padding: 12px 0;
@@ -23,24 +39,11 @@ mat-card-subtitle {
   font: var(--mat-sys-body-medium);
 }
 
-.icona-IN_ESECUZIONE {
-  color: #006d75;
+.azioni-riga {
+  display: flex;
+  gap: 4px;
 }
 
-.icona-COMPLETATO {
-  color: #1b6e35;
-}
-
-.icona-IN_ATTESA,
-.icona-PRONTO {
-  color: #6a7378;
-}
-
-.icona-FALLITO,
-.icona-ANNULLATO {
-  color: #b4232a;
-}
-
-.icona-IN_PAUSA {
-  color: #9a5b00;
+.azione-elimina {
+  --mat-icon-button-icon-color: #b4232a;
 }

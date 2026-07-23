@@ -3,13 +3,13 @@ package it.unibas.taskscheduler.engine;
 import it.unibas.taskscheduler.modello.ConfigurazioneEngine;
 import it.unibas.taskscheduler.modello.EStatoTask;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
+import it.unibas.taskscheduler.modello.EsecuzioneWorkflow;
 import it.unibas.taskscheduler.modello.RetryPolicy;
 import it.unibas.taskscheduler.modello.Task;
-import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.observable.TaskObserver;
 import it.unibas.taskscheduler.persistenza.IRepositoryConfigurazioneEngine;
+import it.unibas.taskscheduler.persistenza.IRepositoryEsecuzione;
 import it.unibas.taskscheduler.persistenza.IRepositoryTask;
-import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -17,6 +17,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,7 +29,7 @@ public class Engine implements TaskObserver {
     Scheduler scheduler;
 
     @Inject
-    IRepositoryWorkflow repositoryWorkflow;
+    IRepositoryEsecuzione repositoryEsecuzione;
 
     @Inject
     IRepositoryTask repositoryTask;
@@ -38,74 +39,64 @@ public class Engine implements TaskObserver {
 
     private static final RetryPolicy RetryPolicyDefault = new RetryPolicy(5, 5);
 
-    private final Map<Long, Workflow> workflowAttivi = new ConcurrentHashMap<>();
+    private final Map<Long, EsecuzioneWorkflow> esecuzioniAttive = new ConcurrentHashMap<>();
 
     @Transactional
-    synchronized void recuperaWorkflowAttivi(@Observes StartupEvent ev) {
-        repositoryWorkflow.getWorkflowInCorso().ifPresent(workflow -> {
-            log.info("Ripristino workflow attivo '{}' (stato {}).", workflow.getNome(), workflow.getStato());
-            workflow.inizializzaRuntime(this);
-            workflowAttivi.put(workflow.getId(), workflow);
-            workflow.getTasks().stream()
+    synchronized void recuperaEsecuzioniAttive(@Observes StartupEvent ev) {
+        repositoryEsecuzione.getEsecuzioneInCorso().ifPresent(esecuzione -> {
+            log.info("Ripristino esecuzione attiva '{}' (stato {}).", esecuzione.getNome(), esecuzione.getStato());
+            esecuzione.inizializzaRuntime(this);
+            esecuzioniAttive.put(esecuzione.getId(), esecuzione);
+            esecuzione.getTasks().stream()
                     .filter(Task::isInEsecuzione)
                     .forEach(t -> t.setStato(EStatoTask.PRONTO));
-            if (workflow.getStato() == EStatoWorkflow.IN_ESECUZIONE) {
-                schedulaTaskWorkflow(workflow);
+            if (esecuzione.getStato() == EStatoWorkflow.IN_ESECUZIONE) {
+                schedulaTaskEsecuzione(esecuzione);
             }
         });
     }
 
-    public EStatoWorkflow statoWorkflow(Long id) {
-        Workflow workflow = workflowAttivi.get(id);
-        return workflow != null ? workflow.getStato() : null;
+    public EStatoWorkflow statoEsecuzione(Long id) {
+        EsecuzioneWorkflow esecuzione = esecuzioniAttive.get(id);
+        return esecuzione != null ? esecuzione.getStato() : null;
     }
 
     @Transactional
-    public synchronized void pausaWorkflow(Long id) {
-        Workflow workflow = workflowAttivi.get(id);
-        if (workflow == null || workflow.getStato() != EStatoWorkflow.IN_ESECUZIONE) {
-            throw new IllegalStateException("Il workflow non è in esecuzione");
+    public synchronized void pausaEsecuzione(Long id) {
+        EsecuzioneWorkflow esecuzione = esecuzioniAttive.get(id);
+        if (esecuzione == null || esecuzione.getStato() != EStatoWorkflow.IN_ESECUZIONE) {
+            throw new IllegalStateException("L'esecuzione non è in corso");
         }
-        workflow.pausa();
-        repositoryWorkflow.aggiornaStato(workflow);
-        log.info("Workflow '{}' messo in pausa.", workflow.getNome());
+        esecuzione.pausa();
+        repositoryEsecuzione.aggiornaStato(esecuzione);
+        log.info("Esecuzione '{}' messa in pausa.", esecuzione.getNome());
     }
 
     @Transactional
-    public synchronized void riprendiWorkflow(Long id) {
-        Workflow workflow = workflowAttivi.get(id);
-        if (workflow == null || workflow.getStato() != EStatoWorkflow.IN_PAUSA) {
-            throw new IllegalStateException("Il workflow non è in pausa");
+    public synchronized void riprendiEsecuzione(Long id) {
+        EsecuzioneWorkflow esecuzione = esecuzioniAttive.get(id);
+        if (esecuzione == null || esecuzione.getStato() != EStatoWorkflow.IN_PAUSA) {
+            throw new IllegalStateException("L'esecuzione non è in pausa");
         }
-        workflow.riprendi();
-        repositoryWorkflow.aggiornaStato(workflow);
-        log.info("Workflow '{}' ripreso.", workflow.getNome());
+        esecuzione.riprendi();
+        repositoryEsecuzione.aggiornaStato(esecuzione);
+        log.info("Esecuzione '{}' ripresa.", esecuzione.getNome());
     }
 
     @Transactional
-    public void importaWorkflow(Workflow workflow) {
-        assert workflow != null;
-        log.info("Importazione workflow '{}'", workflow.getNome());
-        workflow.setStato(EStatoWorkflow.IN_PAUSA);
-        workflow.inizializzaFigli(this);
-        repositoryWorkflow.persist(workflow);
-        log.info("Workflow '{} - {}' importato con {} task.", workflow.getId(),  workflow.getNome(), workflow.getTasks().size());
+    public synchronized void avviaEsecuzione(EsecuzioneWorkflow esecuzione) {
+        assert esecuzione != null;
+        log.info("Avvio esecuzione '{}'", esecuzione.getNome());
+        checkCambioStatoValido(esecuzione.getStato(), EStatoWorkflow.IN_ESECUZIONE);
+        esecuzione.inizializzaRuntime(this);
+        esecuzione.avvia();
+        esecuzioniAttive.put(esecuzione.getId(), esecuzione);
+        repositoryEsecuzione.aggiornaStato(esecuzione);
+        schedulaTaskEsecuzione(esecuzione);
     }
 
-    @Transactional
-    public synchronized void avviaWorkflow(Workflow workflow) {
-        assert workflow != null;
-        log.info("Avvio workflow '{}'", workflow.getNome());
-        checkCambioStatoValido(workflow.getStato(), EStatoWorkflow.IN_ESECUZIONE);
-        workflow.inizializzaRuntime(this);
-        workflow.avvia();
-        workflowAttivi.put(workflow.getId(), workflow);
-        repositoryWorkflow.aggiornaStato(workflow);
-        schedulaTaskWorkflow(workflow);
-    }
-
-    private void schedulaTaskWorkflow(Workflow workflow) {
-        workflow.getTasks().stream()
+    private void schedulaTaskEsecuzione(EsecuzioneWorkflow esecuzione) {
+        esecuzione.getTasks().stream()
             .filter(t -> t.getStato() == EStatoTask.PRONTO)
             .forEach(scheduler::schedulaTask);
     }
@@ -114,14 +105,14 @@ public class Engine implements TaskObserver {
     @Transactional
     public synchronized void aggiorna(Task task) {
         log.info("Aggiornamento task '{}': stato {}", task.getNome(), task.getStato());
-        Workflow workflow = workflowAttivi.get(task.getWorkflowId());
-        if (workflow == null) {
+        EsecuzioneWorkflow esecuzione = esecuzioniAttive.get(task.getEsecuzioneId());
+        if (esecuzione == null) {
             return;
         }
         repositoryTask.aggiornaStato(task);
 
-        EStatoWorkflow statoWorkflow = workflow.getStato();
-        if (statoWorkflow == EStatoWorkflow.COMPLETATO || statoWorkflow == EStatoWorkflow.FALLITO || statoWorkflow == EStatoWorkflow.ANNULLATO) {
+        EStatoWorkflow statoEsecuzione = esecuzione.getStato();
+        if (statoEsecuzione == EStatoWorkflow.COMPLETATO || statoEsecuzione == EStatoWorkflow.FALLITO || statoEsecuzione == EStatoWorkflow.ANNULLATO) {
             return;
         }
 
@@ -135,13 +126,12 @@ public class Engine implements TaskObserver {
                 }
             });
 
-            boolean tuttiCompletati = workflow.getTasks().stream()
+            boolean tuttiCompletati = esecuzione.getTasks().stream()
                     .allMatch(Task::isCompletato);
             if (tuttiCompletati) {
-                workflow.setStato(EStatoWorkflow.COMPLETATO);
-                repositoryWorkflow.aggiornaStato(workflow);
-                workflowAttivi.remove(workflow.getId());
-                log.info("Workflow '{}' completato.", workflow.getNome());
+                esecuzione.setStato(EStatoWorkflow.COMPLETATO);
+                terminaEsecuzione(esecuzione);
+                log.info("Esecuzione '{}' completata.", esecuzione.getNome());
             }
 
         } else if (task.getStato() == EStatoTask.FALLITO) {
@@ -156,34 +146,38 @@ public class Engine implements TaskObserver {
                 task.setStato(EStatoTask.PRONTO);
                 scheduler.schedulaTaskConRitardo(task, policy.getIntervallo());
             } else {
-                log.error("Task '{}' fallito definitivamente dopo {} tentativi. Workflow {} FALLITO.",
-                        task.getNome(), task.getTentativi(), workflow.getId());
-                workflow.setStato(EStatoWorkflow.FALLITO);
-                repositoryWorkflow.aggiornaStato(workflow);
-                workflow.trasmettiStatoAiTask(EStatoTask.FALLITO);
-                workflowAttivi.remove(workflow.getId());
+                log.error("Task '{}' fallito definitivamente dopo {} tentativi. Esecuzione {} FALLITA.",
+                        task.getNome(), task.getTentativi(), esecuzione.getId());
+                esecuzione.setStato(EStatoWorkflow.FALLITO);
+                terminaEsecuzione(esecuzione);
+                esecuzione.trasmettiStatoAiTask(EStatoTask.FALLITO);
             }
         }
     }
 
     @Transactional
-    public synchronized void annullaWorkflow(Workflow workflow) {
-        Workflow attivo = workflowAttivi.getOrDefault(workflow.getId(), workflow);
-        attivo.inizializzaRuntime(this);
-        attivo.annulla();
-        repositoryWorkflow.aggiornaStato(attivo);
+    public synchronized void annullaEsecuzione(EsecuzioneWorkflow esecuzione) {
+        EsecuzioneWorkflow attiva = esecuzioniAttive.getOrDefault(esecuzione.getId(), esecuzione);
+        attiva.inizializzaRuntime(this);
+        attiva.annulla();
         scheduler.svuotaCoda();
-        annullaTuttiTask(attivo);
-        workflowAttivi.remove(attivo.getId());
+        annullaTuttiTask(attiva);
+        terminaEsecuzione(attiva);
     }
 
-    private void annullaTuttiTask(Workflow workflow) {
-        workflow.getTasks().stream()
+    private void terminaEsecuzione(EsecuzioneWorkflow esecuzione) {
+        esecuzione.setDataFine(LocalDateTime.now());
+        repositoryEsecuzione.aggiornaStato(esecuzione);
+        esecuzioniAttive.remove(esecuzione.getId());
+    }
+
+    private void annullaTuttiTask(EsecuzioneWorkflow esecuzione) {
+        esecuzione.getTasks().stream()
                 .filter(Task::isInEsecuzione)
                 .forEach(t -> {
                     t.getAzione().annulla();
                 });
-        workflow.trasmettiStatoAiTask(EStatoTask.ANNULLATO);
+        esecuzione.trasmettiStatoAiTask(EStatoTask.ANNULLATO);
     }
 
     private boolean checkCambioStatoValido(EStatoWorkflow vecchioStato, EStatoWorkflow nuovoStato) {

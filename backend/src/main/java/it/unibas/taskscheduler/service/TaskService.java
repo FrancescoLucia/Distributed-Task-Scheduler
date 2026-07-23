@@ -1,7 +1,7 @@
 package it.unibas.taskscheduler.service;
 
+import it.unibas.taskscheduler.persistenza.IRepositoryEsecuzione;
 import it.unibas.taskscheduler.persistenza.IRepositoryTask;
-import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import it.unibas.taskscheduler.rest.dto.TaskDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,15 +15,15 @@ public class TaskService {
     IRepositoryTask repositoryTask;
 
     @Inject
-    IRepositoryWorkflow repositoryWorkflow;
+    IRepositoryEsecuzione repositoryEsecuzione;
 
     @Transactional
     public TaskDTO findById(Long id) {
         return repositoryTask.findByIdOptional(id)
-                .map(task -> repositoryWorkflow.findByIdOptional(task.getWorkflowId())
-                        .map(workflow -> {
-                            workflow.ricostruisciFigli();
-                            return workflow.getTasks().stream()
+                .map(task -> repositoryEsecuzione.findByIdOptional(task.getEsecuzioneId())
+                        .map(esecuzione -> {
+                            esecuzione.ricostruisciFigli();
+                            return esecuzione.getTasks().stream()
                                     .filter(t -> t.getId().equals(id))
                                     .findFirst()
                                     .orElse(task);

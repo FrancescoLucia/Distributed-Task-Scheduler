@@ -12,6 +12,11 @@
   flex: 1 1 auto;
 }
 
+.etichetta-stato-engine {
+  color: #5f6f76;
+  font: var(--mat-sys-label-large);
+}
+
 .stato-toolbar {
   padding: 4px 12px;
   border-radius: 999px;
@@ -33,6 +38,11 @@
 
 .stato-toolbar.stato-COMPLETATO {
   background: #dff3e5;
+}
+
+.stato-toolbar.stato-INATTIVO {
+  background: #edf1f3;
+  color: #5f6f76;
 }
 
 .dashboard {

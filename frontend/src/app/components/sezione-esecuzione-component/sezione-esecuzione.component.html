@@ -31,47 +31,47 @@
   <section class="griglia-dashboard">
     <app-sezione-grafo [grafo]="grafoWorkflow()!"></app-sezione-grafo>
 
-    <mat-tab-group class="tab-full-width">
-      <mat-tab label="Avanzamento">
-        <app-sezione-avanzamento
-          [percentuale]="avanzamentoPercentuale()"
-          [taskCompletati]="taskCompletati()"
-          [taskTotali]="taskTotali()"
-          [taskInErrore]="taskInErrore()"
-        ></app-sezione-avanzamento>
-      </mat-tab>
-      <mat-tab label="Lista Task">
-        <mat-card class="scheda-elenco">
-          <mat-card-header>
-            <mat-card-title>Task runtime</mat-card-title>
-            <mat-card-subtitle>Stato e tentativi per ogni task</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <mat-list>
-              @for (nodo of grafoWorkflow()!.nodi; track nodo.id) {
-                <mat-list-item>
-                  @if (nodo.stato === 'IN_ESECUZIONE') {
-                    <mat-spinner matListItemIcon diameter="20"></mat-spinner>
-                  } @else {
-                    <mat-icon matListItemIcon [class]="'icona-' + nodo.stato">radio_button_checked</mat-icon>
-                  }
-                  <div matListItemTitle>{{ nodo.nome }}</div>
-                  <div matListItemLine>{{ etichettaStato(nodo.stato) }}</div>
-                  <div matListItemMeta>
-                    @if (nodo.tentativi > 0) {
-                      <mat-chip-set aria-label="Retry">
-                        <mat-chip class="chip-retry">↺ {{ nodo.tentativi }}</mat-chip>
-                      </mat-chip-set>
-                    }
-                  </div>
-                </mat-list-item>
-                <mat-divider></mat-divider>
+    <mat-card class="scheda-elenco">
+      <mat-card-header>
+        <mat-card-title>Task runtime</mat-card-title>
+        <mat-card-subtitle>Stato e tentativi per ogni task</mat-card-subtitle>
+      </mat-card-header>
+      <div class="riepilogo-avanzamento">
+        <div class="riga-riepilogo">
+          <span class="percentuale">{{ avanzamentoPercentuale() }}%</span>
+          <span class="dettaglio">
+            {{ taskCompletati() }}/{{ taskTotali() }} task completati
+            @if (taskInErrore() > 0) {
+              · <span class="conteggio-errori">{{ taskInErrore() }} in errore</span>
+            }
+          </span>
+        </div>
+        <mat-progress-bar mode="determinate" [value]="avanzamentoPercentuale()"></mat-progress-bar>
+      </div>
+      <mat-card-content>
+        <mat-list>
+          @for (nodo of grafoWorkflow()!.nodi; track nodo.id) {
+            <mat-list-item>
+              @if (nodo.stato === 'IN_ESECUZIONE') {
+                <mat-spinner matListItemIcon diameter="20"></mat-spinner>
+              } @else {
+                <mat-icon matListItemIcon [class]="'icona-' + nodo.stato">radio_button_checked</mat-icon>
               }
-            </mat-list>
-          </mat-card-content>
-        </mat-card>
-      </mat-tab>
-    </mat-tab-group>
+              <div matListItemTitle>{{ nodo.nome }}</div>
+              <div matListItemLine>{{ etichettaStato(nodo.stato) }}</div>
+              <div matListItemMeta>
+                @if (nodo.tentativi > 0) {
+                  <mat-chip-set aria-label="Retry">
+                    <mat-chip class="chip-retry">↺ {{ nodo.tentativi }}</mat-chip>
+                  </mat-chip-set>
+                }
+              </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+          }
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
   </section>
 } @else {
   <div class="stato-vuoto">

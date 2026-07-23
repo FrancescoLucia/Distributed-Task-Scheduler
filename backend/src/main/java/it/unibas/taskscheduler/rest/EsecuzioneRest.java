@@ -1,12 +1,10 @@
 package it.unibas.taskscheduler.rest;
 
+import it.unibas.taskscheduler.rest.dto.EsecuzioneSummaryDTO;
 import it.unibas.taskscheduler.rest.dto.GraphDTO;
-import it.unibas.taskscheduler.rest.dto.WorkflowCatalogoDTO;
 import it.unibas.taskscheduler.service.EsecuzioneService;
-import it.unibas.taskscheduler.service.WorkflowService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -17,41 +15,37 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.Map;
 
-@Path("/workflow")
+@Path("/esecuzioni")
 @ApplicationScoped
 @Produces(MediaType.APPLICATION_JSON)
-public class WorkflowRest {
-
-    @Inject
-    WorkflowService workflowService;
+public class EsecuzioneRest {
 
     @Inject
     EsecuzioneService esecuzioneService;
 
     @GET
-    public List<WorkflowCatalogoDTO> listaWorkflow(@QueryParam("nome") String nome) {
-        return workflowService.listaWorkflow(nome);
+    public List<EsecuzioneSummaryDTO> storia(@QueryParam("workflowId") Long workflowId) {
+        return esecuzioneService.storia(workflowId);
+    }
+
+    @GET
+    @Path("/{id}")
+    public EsecuzioneSummaryDTO getEsecuzione(@PathParam("id") Long id) {
+        return esecuzioneService.getEsecuzione(id);
     }
 
     @GET
     @Path("/{id}/graph")
     public GraphDTO getGrafo(@PathParam("id") Long id) {
-        return workflowService.getGrafo(id);
+        return esecuzioneService.getGrafo(id);
     }
 
     @POST
-    @Path("/importa")
-    public Response importa() {
-        return Response.ok(workflowService.importaWorkflowDemo()).build();
-    }
-
-    @DELETE
-    @Path("/{id}")
-    public Response elimina(@PathParam("id") Long id) {
+    @Path("/{id}/pausa")
+    public Response pausa(@PathParam("id") Long id) {
         try {
-            workflowService.eliminaWorkflow(id);
+            esecuzioneService.pausa(id);
             return Response.noContent().build();
         } catch (IllegalStateException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -59,11 +53,22 @@ public class WorkflowRest {
     }
 
     @POST
-    @Path("/{id}/avvia")
-    public Response avvia(@PathParam("id") Long id) {
+    @Path("/{id}/riprendi")
+    public Response riprendi(@PathParam("id") Long id) {
         try {
-            Long esecuzioneId = esecuzioneService.avvia(id);
-            return Response.ok(Map.of("esecuzioneId", esecuzioneId)).build();
+            esecuzioneService.riprendi(id);
+            return Response.noContent().build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/{id}/annulla")
+    public Response annulla(@PathParam("id") Long id) {
+        try {
+            esecuzioneService.annulla(id);
+            return Response.noContent().build();
         } catch (IllegalStateException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }

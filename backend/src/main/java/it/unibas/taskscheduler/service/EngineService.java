@@ -1,6 +1,6 @@
 package it.unibas.taskscheduler.service;
 
-import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
+import it.unibas.taskscheduler.persistenza.IRepositoryEsecuzione;
 import it.unibas.taskscheduler.rest.dto.EngineStatusDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,11 +10,11 @@ import jakarta.transaction.Transactional;
 public class EngineService {
 
     @Inject
-    IRepositoryWorkflow repositoryWorkflow;
+    IRepositoryEsecuzione repositoryEsecuzione;
 
     @Transactional
     public EngineStatusDTO getStatus() {
-        return repositoryWorkflow.getWorkflowInCorso()
+        return repositoryEsecuzione.getEsecuzioneInCorso()
                 .map(EngineStatusDTO::from)
                 .orElse(EngineStatusDTO.inattivo());
     }

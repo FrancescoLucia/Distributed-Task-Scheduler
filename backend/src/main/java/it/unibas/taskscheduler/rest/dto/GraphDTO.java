@@ -1,13 +1,15 @@
 package it.unibas.taskscheduler.rest.dto;
 
 import it.unibas.taskscheduler.modello.EStatoTask;
+import it.unibas.taskscheduler.modello.EsecuzioneWorkflow;
 import it.unibas.taskscheduler.modello.Task;
-import it.unibas.taskscheduler.modello.Workflow;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class GraphDTO {
@@ -31,16 +33,37 @@ public class GraphDTO {
         private Long destinazione;
     }
 
-    public static GraphDTO from(Workflow workflow) {
+    public static GraphDTO from(EsecuzioneWorkflow esecuzione) {
         GraphDTO dto = new GraphDTO();
-        dto.nodi = workflow.getTasks().stream()
+        dto.nodi = esecuzione.getTasks().stream()
                 .map(t -> new NodoDTO(t.getId(), t.getNome(), t.getStato(), t.getTentativi()))
                 .toList();
 
         List<DipendenzaDTO> dipendenzeDTO = new ArrayList<>();
-        for (Task task : workflow.getTasks()) {
+        for (Task task : esecuzione.getTasks()) {
             for (Task dep : task.getDipendenze()) {
                 dipendenzeDTO.add(new DipendenzaDTO(dep.getId(), task.getId()));
+            }
+        }
+        dto.dipendenze = dipendenzeDTO;
+        return dto;
+    }
+
+    public static GraphDTO fromDefinizione(List<DefinizioneTaskDTO> definizione) {
+        GraphDTO dto = new GraphDTO();
+        Map<String, Long> idPerNome = new HashMap<>();
+        long indice = 0;
+        for (DefinizioneTaskDTO def : definizione) {
+            idPerNome.put(def.getNome(), indice++);
+        }
+        dto.nodi = definizione.stream()
+                .map(def -> new NodoDTO(idPerNome.get(def.getNome()), def.getNome(), null, 0))
+                .toList();
+
+        List<DipendenzaDTO> dipendenzeDTO = new ArrayList<>();
+        for (DefinizioneTaskDTO def : definizione) {
+            for (String dep : def.getDipendenze()) {
+                dipendenzeDTO.add(new DipendenzaDTO(idPerNome.get(dep), idPerNome.get(def.getNome())));
             }
         }
         dto.dipendenze = dipendenzeDTO;

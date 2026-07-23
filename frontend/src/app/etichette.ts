@@ -8,6 +8,7 @@ const ETICHETTE_STATO: Record<string, string> = {
   ANNULLATO: 'Annullato',
   IN_ATTESA: 'In attesa',
   PRONTO: 'Pronto',
+  INATTIVO: 'Inattivo',
 };
 
 export function etichettaStato(stato: EStatoWorkflow | EStatoTask | string | null): string {

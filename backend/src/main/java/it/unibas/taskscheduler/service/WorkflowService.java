@@ -1,14 +1,15 @@
 package it.unibas.taskscheduler.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.unibas.taskscheduler.command.CommandMapper;
 import it.unibas.taskscheduler.command.ScriptCommand;
-import it.unibas.taskscheduler.engine.Engine;
-import it.unibas.taskscheduler.modello.EStatoWorkflow;
-import it.unibas.taskscheduler.modello.Task;
 import it.unibas.taskscheduler.modello.Workflow;
+import it.unibas.taskscheduler.persistenza.IRepositoryEsecuzione;
 import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
+import it.unibas.taskscheduler.rest.dto.DefinizioneTaskDTO;
 import it.unibas.taskscheduler.rest.dto.GraphDTO;
-import it.unibas.taskscheduler.rest.dto.WorkflowDTO;
-import it.unibas.taskscheduler.rest.dto.WorkflowSummaryDTO;
+import it.unibas.taskscheduler.rest.dto.WorkflowCatalogoDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -23,103 +24,79 @@ import java.util.concurrent.ThreadLocalRandom;
 public class WorkflowService {
 
     @Inject
-    Engine engine;
-
-    @Inject
     IRepositoryWorkflow repositoryWorkflow;
 
+    @Inject
+    IRepositoryEsecuzione repositoryEsecuzione;
+
+    @Inject
+    ObjectMapper objectMapper;
+
     @Transactional
-    public List<WorkflowSummaryDTO> listaWorkflow() {
-        return repositoryWorkflow.findAllWorkflows().stream()
-                .peek(Workflow::ricostruisciFigli)
-                .map(WorkflowSummaryDTO::from)
+    public List<WorkflowCatalogoDTO> listaWorkflow(String nome) {
+        return repositoryWorkflow.findAll(nome).stream()
+                .map(WorkflowCatalogoDTO::from)
                 .toList();
     }
 
     @Transactional
-    public WorkflowDTO getWorkflow(Long id) {
-        return repositoryWorkflow.findByIdOptional(id)
-                .map(this::inizializzaGrafo)
-                .map(WorkflowDTO::from)
+    public GraphDTO getGrafo(Long id) {
+        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
+        return GraphDTO.fromDefinizione(deserializzaDefinizione(workflow.getDefinizioneJson()));
     }
 
     @Transactional
-    public GraphDTO getGrafo(Long id) {
-        return repositoryWorkflow.findByIdOptional(id)
-                .map(this::inizializzaGrafo)
-                .map(GraphDTO::from)
-                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
-    }
-
-    private Workflow inizializzaGrafo(Workflow workflow) {
-        workflow.ricostruisciFigli();
-        return workflow;
-    }
-
-    private Task getTaskDemo(String nomeTask) {
-        int sleep = ThreadLocalRandom.current().nextInt(1, 120);
-        String istruzione = String.format("sleep %d && echo '%s done'", sleep, nomeTask);
-        return new Task(nomeTask, new ScriptCommand(istruzione));
-    }
-
     public Long importaWorkflowDemo() {
-        Task taskA = getTaskDemo("Task-A");
-        Task taskB = getTaskDemo("Task-B");
-        Task taskC = getTaskDemo("Task-C");
-        Task taskD = getTaskDemo("Task-D");
-        Task taskE = getTaskDemo("Task-E");
-
-        taskB.getDipendenze().add(taskA);
-        taskC.getDipendenze().add(taskA);
-        taskE.getDipendenze().add(taskA);
-        taskD.getDipendenze().add(taskB);
-        taskD.getDipendenze().add(taskC);
-
+        List<DefinizioneTaskDTO> definizione = List.of(
+                getTaskDemo("Task-A", List.of()),
+                getTaskDemo("Task-B", List.of("Task-A")),
+                getTaskDemo("Task-C", List.of("Task-A")),
+                getTaskDemo("Task-D", List.of("Task-B", "Task-C")),
+                getTaskDemo("Task-E", List.of("Task-A"))
+        );
         Workflow workflow = new Workflow();
         workflow.setNome("Workflow Demo " + ThreadLocalRandom.current().nextInt(1, 100));
-        workflow.aggiungiTask(taskA);
-        workflow.aggiungiTask(taskB);
-        workflow.aggiungiTask(taskC);
-        workflow.aggiungiTask(taskD);
-        workflow.aggiungiTask(taskE);
-
-        engine.importaWorkflow(workflow);
+        workflow.setDefinizioneJson(serializzaDefinizione(definizione));
+        workflow.setNumeroTask(definizione.size());
+        repositoryWorkflow.persist(workflow);
+        log.info("Workflow '{} - {}' importato con {} task.", workflow.getId(), workflow.getNome(), workflow.getNumeroTask());
         return workflow.getId();
     }
 
     @Transactional
-    public void avviaWorkflow(Long id) {
-        repositoryWorkflow.getWorkflowInCorso().ifPresent(workflowInCorso -> {
-            log.info("Workflow in corso: {}", workflowInCorso);
-            if (!workflowInCorso.getId().equals(id)) {
-                throw new IllegalArgumentException("Terminare prima il workflow in esecuzione");
+    public void eliminaWorkflow(Long id) {
+        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
+        repositoryEsecuzione.getEsecuzioneInCorso().ifPresent(esecuzione -> {
+            if (esecuzione.getWorkflow() != null && id.equals(esecuzione.getWorkflow().getId())) {
+                throw new IllegalStateException("Il workflow ha un'esecuzione in corso");
             }
         });
-        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
-                .map(this::inizializzaGrafo)
-                .orElseThrow(() -> new NotFoundException("Workflow non trovato"));
-        engine.avviaWorkflow(workflow);
+        repositoryWorkflow.delete(workflow.getId());
+        log.info("Workflow '{}' eliminato dal catalogo.", workflow.getNome());
     }
 
-    public void pausaWorkflow(Long id) {
-        engine.pausaWorkflow(id);
-    }
-
-    public void riprendiWorkflow(Long id) {
-        engine.riprendiWorkflow(id);
-    }
-
-    @Transactional
-    public void annullaWorkflow(Long id) {
-        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
-                .map(this::inizializzaGrafo)
-                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
-        EStatoWorkflow stato = workflow.getStato();
-        if (stato == EStatoWorkflow.COMPLETATO || stato == EStatoWorkflow.FALLITO || stato == EStatoWorkflow.ANNULLATO) {
-            throw new IllegalStateException("Il workflow è già in stato terminale");
+    public String serializzaDefinizione(List<DefinizioneTaskDTO> definizione) {
+        try {
+            return objectMapper.writeValueAsString(definizione);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore serializzazione definizione workflow", e);
         }
-        engine.annullaWorkflow(workflow);
-        log.info("Workflow '{}' annullato.", workflow.getNome());
+    }
+
+    public List<DefinizioneTaskDTO> deserializzaDefinizione(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<DefinizioneTaskDTO>>() {});
+        } catch (Exception e) {
+            throw new RuntimeException("Errore lettura definizione workflow", e);
+        }
+    }
+
+    private DefinizioneTaskDTO getTaskDemo(String nomeTask, List<String> dipendenze) {
+        int sleep = ThreadLocalRandom.current().nextInt(1, 120);
+        String istruzione = String.format("sleep %d && echo '%s done'", sleep, nomeTask);
+        ScriptCommand azione = new ScriptCommand(istruzione);
+        return new DefinizioneTaskDTO(nomeTask, CommandMapper.typeOf(azione), CommandMapper.payloadOf(azione), List.copyOf(dipendenze));
     }
 }

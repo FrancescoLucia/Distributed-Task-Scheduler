@@ -1,28 +1,24 @@
 package it.unibas.taskscheduler.rest.dto;
 
-import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Workflow;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
-public class WorkflowDTO {
+public class WorkflowCatalogoDTO {
 
     private Long id;
     private String nome;
-    private EStatoWorkflow stato;
     private LocalDateTime dataCreazione;
-    private List<TaskDTO> tasks;
+    private int numeroTask;
 
-    public static WorkflowDTO from(Workflow workflow) {
-        WorkflowDTO dto = new WorkflowDTO();
+    public static WorkflowCatalogoDTO from(Workflow workflow) {
+        WorkflowCatalogoDTO dto = new WorkflowCatalogoDTO();
         dto.id = workflow.getId();
         dto.nome = workflow.getNome();
-        dto.stato = workflow.getStato();
         dto.dataCreazione = workflow.getDataCreazione();
-        dto.tasks = workflow.getTasks().stream().map(TaskDTO::from).toList();
+        dto.numeroTask = workflow.getNumeroTask();
         return dto;
     }
 }

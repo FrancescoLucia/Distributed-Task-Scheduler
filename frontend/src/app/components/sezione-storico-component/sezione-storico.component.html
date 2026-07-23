@@ -1,0 +1,53 @@
+<section class="griglia-storico" [class.con-grafo]="esecuzioneSelezionata()">
+  <mat-card class="scheda-storico">
+    <mat-card-header>
+      <mat-card-title>Esecuzioni passate</mat-card-title>
+      <mat-card-subtitle>{{ listaEsecuzioni().length }} esecuzioni · seleziona per il dettaglio</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content class="contenuto-scrollabile">
+      @if (listaEsecuzioni().length === 0) {
+        <p class="testo-vuoto">Nessuna esecuzione registrata.</p>
+      } @else {
+        <mat-list>
+          @for (esecuzione of listaEsecuzioni(); track esecuzione.id) {
+            <mat-list-item
+              class="riga-esecuzione"
+              [class.riga-selezionata]="esecuzione.id === esecuzioneSelezionata()?.id"
+              (click)="selezionaEsecuzione(esecuzione)">
+              <mat-icon matListItemIcon [class]="'icona-' + esecuzione.stato">history</mat-icon>
+              <div matListItemTitle>{{ esecuzione.nome }}</div>
+              <div matListItemLine>
+                {{ etichettaStato(esecuzione.stato) }} · {{ esecuzione.taskCompletati }}/{{ esecuzione.taskTotali }} task
+              </div>
+              <div matListItemLine class="riga-date">
+                {{ esecuzione.dataInizio | date:'dd/MM/yyyy HH:mm' }}
+                @if (esecuzione.dataFine) {
+                  → {{ esecuzione.dataFine | date:'dd/MM/yyyy HH:mm' }}
+                }
+              </div>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+          }
+        </mat-list>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (grafoStorico() && esecuzioneSelezionata(); as esecuzione) {
+    <div class="dettaglio-grafo">
+      <div class="intestazione-dettaglio">
+        <p class="soprattitolo">Grafo esecuzione</p>
+        <h2>{{ esecuzione.nome }}</h2>
+        <p class="meta-dettaglio">
+          <span [class]="'stato-' + esecuzione.stato">{{ etichettaStato(esecuzione.stato) }}</span>
+          · {{ esecuzione.taskCompletati }}/{{ esecuzione.taskTotali }} task
+          · {{ esecuzione.dataInizio | date:'dd/MM/yyyy HH:mm' }}
+          @if (esecuzione.dataFine) {
+            → {{ esecuzione.dataFine | date:'dd/MM/yyyy HH:mm' }}
+          }
+        </p>
+      </div>
+      <app-sezione-grafo [grafo]="grafoStorico()!"></app-sezione-grafo>
+    </div>
+  }
+</section>
