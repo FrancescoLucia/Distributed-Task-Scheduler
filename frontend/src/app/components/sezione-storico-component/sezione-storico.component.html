@@ -41,6 +41,7 @@
         <p class="meta-dettaglio">
           <span [class]="'stato-' + esecuzione.stato">{{ etichettaStato(esecuzione.stato) }}</span>
           · {{ esecuzione.taskCompletati }}/{{ esecuzione.taskTotali }} task
+          · {{ etichettaAlgoritmo(esecuzione.algoritmo) }}
           · {{ esecuzione.dataInizio | date:'dd/MM/yyyy HH:mm' }}
           @if (esecuzione.dataFine) {
             → {{ esecuzione.dataFine | date:'dd/MM/yyyy HH:mm' }}

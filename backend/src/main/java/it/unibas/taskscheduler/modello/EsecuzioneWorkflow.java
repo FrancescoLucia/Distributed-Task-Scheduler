@@ -49,6 +49,9 @@ public class EsecuzioneWorkflow {
     @Column(name = "data_fine")
     private LocalDateTime dataFine;
 
+    @Column(nullable = false)
+    private String algoritmo;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EStatoWorkflow stato = EStatoWorkflow.IN_PAUSA;

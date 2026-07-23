@@ -11,6 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { WorkflowService } from '../../dati-runtime-workflow.service';
 import { etichettaStato } from '../../etichette';
+import { ALGORITMO_LABELS, AlgoritmoSchedulazione } from '../../types/algoritmo-schedulazione';
 import { SezioneGrafoComponent } from '../sezione-grafo-component/sezione-grafo.component';
 
 @Component({
@@ -38,6 +39,10 @@ export class SezioneEsecuzioneComponent {
   protected readonly grafoWorkflow = this.servizioWorkflow.grafoWorkflow;
   protected readonly esecuzioneCorrente = this.servizioWorkflow.esecuzioneCorrente;
   protected readonly etichettaStato = etichettaStato;
+
+  protected etichettaAlgoritmo(algoritmo: AlgoritmoSchedulazione): string {
+    return ALGORITMO_LABELS[algoritmo] ?? algoritmo;
+  }
 
   protected readonly terminata = computed(() => {
     const stato = this.esecuzioneCorrente()?.stato;

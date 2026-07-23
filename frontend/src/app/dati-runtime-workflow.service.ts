@@ -41,6 +41,7 @@ export interface EsecuzioneSummary {
   dataInizio: string;
   dataFine: string | null;
   stato: EStatoWorkflow;
+  algoritmo: AlgoritmoSchedulazione;
   taskTotali: number;
   taskCompletati: number;
 }

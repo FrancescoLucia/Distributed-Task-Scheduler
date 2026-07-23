@@ -16,6 +16,7 @@ public class EsecuzioneSummaryDTO {
     private LocalDateTime dataInizio;
     private LocalDateTime dataFine;
     private EStatoWorkflow stato;
+    private String algoritmo;
     private int taskTotali;
     private long taskCompletati;
 
@@ -27,6 +28,7 @@ public class EsecuzioneSummaryDTO {
         dto.dataInizio = esecuzione.getDataInizio();
         dto.dataFine = esecuzione.getDataFine();
         dto.stato = esecuzione.getStato();
+        dto.algoritmo = esecuzione.getAlgoritmo();
         dto.taskTotali = esecuzione.getTasks().size();
         dto.taskCompletati = esecuzione.getTasks().stream()
                 .filter(t -> t.getStato() == EStatoTask.COMPLETATO)

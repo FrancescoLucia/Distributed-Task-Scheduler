@@ -3,6 +3,9 @@
     <div>
       <p class="soprattitolo">Workflow in esecuzione</p>
       <h1>{{ statoEngine()?.workflowInCorsoNome ?? 'Esecuzione senza nome' }}</h1>
+      @if (esecuzioneCorrente()?.algoritmo; as algoritmo) {
+        <p class="soprattitolo">Schedulazione: {{ etichettaAlgoritmo(algoritmo) }}</p>
+      }
     </div>
     @if (!terminata()) {
       <div class="controlli">

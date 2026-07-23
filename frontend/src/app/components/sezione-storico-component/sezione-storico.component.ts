@@ -7,6 +7,7 @@ import { MatListModule } from '@angular/material/list';
 
 import { WorkflowService, EsecuzioneSummary } from '../../dati-runtime-workflow.service';
 import { etichettaStato } from '../../etichette';
+import { ALGORITMO_LABELS, AlgoritmoSchedulazione } from '../../types/algoritmo-schedulazione';
 import { SezioneGrafoComponent } from '../sezione-grafo-component/sezione-grafo.component';
 
 @Component({
@@ -30,6 +31,10 @@ export class SezioneStoricoComponent {
   protected readonly grafoStorico = this.servizioWorkflow.grafoStorico;
   protected readonly esecuzioneSelezionata = signal<EsecuzioneSummary | null>(null);
   protected readonly etichettaStato = etichettaStato;
+
+  protected etichettaAlgoritmo(algoritmo: AlgoritmoSchedulazione): string {
+    return ALGORITMO_LABELS[algoritmo] ?? algoritmo;
+  }
 
   protected selezionaEsecuzione(esecuzione: EsecuzioneSummary): void {
     this.esecuzioneSelezionata.set(esecuzione);

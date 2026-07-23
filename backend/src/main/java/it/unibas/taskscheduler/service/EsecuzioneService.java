@@ -51,6 +51,7 @@ public class EsecuzioneService {
 
         List<DefinizioneTaskDTO> definizione = workflowService.deserializzaDefinizione(workflow.getDefinizioneJson());
         EsecuzioneWorkflow esecuzione = costruisciEsecuzione(workflow, definizione);
+        esecuzione.setAlgoritmo(algoritmoScelto.name());
         esecuzione.inizializzaFigli(engine);
         repositoryEsecuzione.persist(esecuzione);
         engine.avviaEsecuzione(esecuzione, algoritmoScelto.getStrategia());
