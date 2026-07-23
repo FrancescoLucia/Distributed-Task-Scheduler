@@ -25,6 +25,12 @@ public class RepositoryWorkflowHibernate implements IRepositoryWorkflow, Panache
 
     @Override
     @Transactional
+    public void aggiornaStato(Workflow workflow) {
+        update("stato = ?1 where id = ?2", workflow.getStato(), workflow.getId());
+    }
+
+    @Override
+    @Transactional
     public Optional<Workflow> findByIdOptional(Long id) {
         Optional<Workflow> workflow = find("""
                         select distinct w

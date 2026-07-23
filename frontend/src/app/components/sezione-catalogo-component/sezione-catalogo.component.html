@@ -1,0 +1,37 @@
+<mat-card class="scheda-catalogo">
+  <mat-card-header>
+    <mat-card-title>Catalogo workflow</mat-card-title>
+    <mat-card-subtitle>{{ listaWorkflow().length }} disponibili</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @if (listaWorkflow().length === 0) {
+      <p class="testo-vuoto">Nessun workflow importato.</p>
+    } @else {
+      <mat-list>
+        @for (workflow of listaWorkflow(); track workflow.id) {
+          <mat-list-item>
+            <mat-icon matListItemIcon [class]="'icona-' + workflow.stato">account_tree</mat-icon>
+            <div matListItemTitle>{{ workflow.nome }}</div>
+            <div matListItemLine>
+              {{ etichettaStato(workflow.stato) }} · {{ workflow.taskCompletati }}/{{ workflow.taskTotali }} task
+            </div>
+            <div matListItemMeta>
+              @if (workflow.stato === 'IN_PAUSA') {
+                <button mat-icon-button type="button" matTooltip="Avvia workflow" (click)="avviaWorkflow(workflow.id)">
+                  <mat-icon>play_arrow</mat-icon>
+                </button>
+              }
+            </div>
+          </mat-list-item>
+          <mat-divider></mat-divider>
+        }
+      </mat-list>
+    }
+  </mat-card-content>
+  <mat-card-actions align="end">
+    <button mat-flat-button type="button" color="primary" (click)="importaWorkflow()">
+      <mat-icon>upload</mat-icon>
+      Importa workflow
+    </button>
+  </mat-card-actions>
+</mat-card>

@@ -33,6 +33,11 @@ public class RepositoryWorkflowMock implements IRepositoryWorkflow {
     }
 
     @Override
+    public void aggiornaStato(Workflow workflow) {
+        workflows.put(workflow.getId(), workflow);
+    }
+
+    @Override
     public Optional<Workflow> findByIdOptional(Long id) {
         return Optional.ofNullable(workflows.get(id));
     }

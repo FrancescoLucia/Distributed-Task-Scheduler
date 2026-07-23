@@ -1,0 +1,46 @@
+:host {
+  display: block;
+}
+
+mat-card {
+  border: 1px solid #dce3e6;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+mat-card-content {
+  padding-top: 16px;
+}
+
+mat-card-subtitle {
+  color: #5f6f76;
+}
+
+.testo-vuoto {
+  margin: 0;
+  padding: 12px 0;
+  color: #8a9ba3;
+  font: var(--mat-sys-body-medium);
+}
+
+.icona-IN_ESECUZIONE {
+  color: #006d75;
+}
+
+.icona-COMPLETATO {
+  color: #1b6e35;
+}
+
+.icona-IN_ATTESA,
+.icona-PRONTO {
+  color: #6a7378;
+}
+
+.icona-FALLITO,
+.icona-ANNULLATO {
+  color: #b4232a;
+}
+
+.icona-IN_PAUSA {
+  color: #9a5b00;
+}

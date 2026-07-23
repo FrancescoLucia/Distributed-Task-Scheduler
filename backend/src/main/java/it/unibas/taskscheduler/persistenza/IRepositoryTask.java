@@ -7,5 +7,7 @@ public interface IRepositoryTask {
 
     public void persist(Task task);
 
+    public void aggiornaStato(Task task);
+
     public Optional<Task> findByIdOptional(Long id);
 }

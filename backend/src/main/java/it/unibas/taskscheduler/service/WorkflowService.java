@@ -102,22 +102,12 @@ public class WorkflowService {
         engine.avviaWorkflow(workflow);
     }
 
-    @Transactional
     public void pausaWorkflow(Long id) {
-        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
-                .map(this::inizializzaGrafo)
-                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
-        workflow.pausa();
-        log.info("Workflow '{}' messo in pausa.", workflow.getNome());
+        engine.pausaWorkflow(id);
     }
 
-    @Transactional
     public void riprendiWorkflow(Long id) {
-        Workflow workflow = repositoryWorkflow.findByIdOptional(id)
-                .map(this::inizializzaGrafo)
-                .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + id));
-        workflow.riprendi();
-        log.info("Workflow '{}' ripreso.", workflow.getNome());
+        engine.riprendiWorkflow(id);
     }
 
     @Transactional

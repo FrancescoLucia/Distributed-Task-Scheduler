@@ -8,12 +8,17 @@ import it.unibas.taskscheduler.modello.Task;
 import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.observable.TaskObserver;
 import it.unibas.taskscheduler.persistenza.IRepositoryConfigurazioneEngine;
+import it.unibas.taskscheduler.persistenza.IRepositoryTask;
 import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @ApplicationScoped
@@ -26,9 +31,56 @@ public class Engine implements TaskObserver {
     IRepositoryWorkflow repositoryWorkflow;
 
     @Inject
+    IRepositoryTask repositoryTask;
+
+    @Inject
     IRepositoryConfigurazioneEngine repositoryConfigurazione;
 
     private static final RetryPolicy RetryPolicyDefault = new RetryPolicy(5, 5);
+
+    private final Map<Long, Workflow> workflowAttivi = new ConcurrentHashMap<>();
+
+    @Transactional
+    synchronized void recuperaWorkflowAttivi(@Observes StartupEvent ev) {
+        repositoryWorkflow.getWorkflowInCorso().ifPresent(workflow -> {
+            log.info("Ripristino workflow attivo '{}' (stato {}).", workflow.getNome(), workflow.getStato());
+            workflow.inizializzaRuntime(this);
+            workflowAttivi.put(workflow.getId(), workflow);
+            workflow.getTasks().stream()
+                    .filter(Task::isInEsecuzione)
+                    .forEach(t -> t.setStato(EStatoTask.PRONTO));
+            if (workflow.getStato() == EStatoWorkflow.IN_ESECUZIONE) {
+                schedulaTaskWorkflow(workflow);
+            }
+        });
+    }
+
+    public EStatoWorkflow statoWorkflow(Long id) {
+        Workflow workflow = workflowAttivi.get(id);
+        return workflow != null ? workflow.getStato() : null;
+    }
+
+    @Transactional
+    public synchronized void pausaWorkflow(Long id) {
+        Workflow workflow = workflowAttivi.get(id);
+        if (workflow == null || workflow.getStato() != EStatoWorkflow.IN_ESECUZIONE) {
+            throw new IllegalStateException("Il workflow non è in esecuzione");
+        }
+        workflow.pausa();
+        repositoryWorkflow.aggiornaStato(workflow);
+        log.info("Workflow '{}' messo in pausa.", workflow.getNome());
+    }
+
+    @Transactional
+    public synchronized void riprendiWorkflow(Long id) {
+        Workflow workflow = workflowAttivi.get(id);
+        if (workflow == null || workflow.getStato() != EStatoWorkflow.IN_PAUSA) {
+            throw new IllegalStateException("Il workflow non è in pausa");
+        }
+        workflow.riprendi();
+        repositoryWorkflow.aggiornaStato(workflow);
+        log.info("Workflow '{}' ripreso.", workflow.getNome());
+    }
 
     @Transactional
     public void importaWorkflow(Workflow workflow) {
@@ -41,12 +93,14 @@ public class Engine implements TaskObserver {
     }
 
     @Transactional
-    public void avviaWorkflow(Workflow workflow) {
+    public synchronized void avviaWorkflow(Workflow workflow) {
         assert workflow != null;
         log.info("Avvio workflow '{}'", workflow.getNome());
         checkCambioStatoValido(workflow.getStato(), EStatoWorkflow.IN_ESECUZIONE);
         workflow.inizializzaRuntime(this);
         workflow.avvia();
+        workflowAttivi.put(workflow.getId(), workflow);
+        repositoryWorkflow.aggiornaStato(workflow);
         schedulaTaskWorkflow(workflow);
     }
 
@@ -60,24 +114,19 @@ public class Engine implements TaskObserver {
     @Transactional
     public synchronized void aggiorna(Task task) {
         log.info("Aggiornamento task '{}': stato {}", task.getNome(), task.getStato());
-        Workflow workflow = repositoryWorkflow.findByIdOptional(task.getWorkflowId()).orElseThrow(() -> new NotFoundException(String.format("Workflow %d non trovato per task '%d'", task.getWorkflowId(), task.getNome())));
-        workflow.ricostruisciFigli();
-        Task taskManaged = workflow.getTasks().stream()
-                .filter(t -> t.getId().equals(task.getId()))
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException(String.format("Task %d non trovato nel workflow %d", task.getId(), workflow.getId())));
-        if (taskManaged.getStato() != task.getStato()) {
-            taskManaged.setStato(task.getStato());
+        Workflow workflow = workflowAttivi.get(task.getWorkflowId());
+        if (workflow == null) {
+            return;
         }
-        taskManaged.setTentativi(task.getTentativi());
+        repositoryTask.aggiornaStato(task);
 
         EStatoWorkflow statoWorkflow = workflow.getStato();
         if (statoWorkflow == EStatoWorkflow.COMPLETATO || statoWorkflow == EStatoWorkflow.FALLITO || statoWorkflow == EStatoWorkflow.ANNULLATO) {
             return;
         }
 
-        if (taskManaged.getStato().equals(EStatoTask.COMPLETATO)) {
-            taskManaged.getFigli().forEach(figlio -> {
+        if (task.getStato().equals(EStatoTask.COMPLETATO)) {
+            task.getFigli().forEach(figlio -> {
                 if (figlio.getStato() == EStatoTask.IN_ATTESA
                         && figlio.getDipendenze().stream().allMatch(d -> d.getStato() == EStatoTask.COMPLETATO)) {
                     log.info("Task '{}' pronto.", figlio.getNome());
@@ -90,35 +139,42 @@ public class Engine implements TaskObserver {
                     .allMatch(Task::isCompletato);
             if (tuttiCompletati) {
                 workflow.setStato(EStatoWorkflow.COMPLETATO);
+                repositoryWorkflow.aggiornaStato(workflow);
+                workflowAttivi.remove(workflow.getId());
                 log.info("Workflow '{}' completato.", workflow.getNome());
             }
 
-        } else if (taskManaged.getStato() == EStatoTask.FALLITO) {
+        } else if (task.getStato() == EStatoTask.FALLITO) {
             RetryPolicy policy = repositoryConfigurazione.find()
                     .map(ConfigurazioneEngine::getRetryPolicy)
                     .orElse(RetryPolicyDefault);
 
-            if (taskManaged.getTentativi() < policy.getMaxTentativi()) {
-                taskManaged.incrementaTentativi();
+            if (task.getTentativi() < policy.getMaxTentativi()) {
+                task.incrementaTentativi();
                 log.warn("Task '{}' fallito. Retry {}/{} tra {} secondi.",
-                        taskManaged.getNome(), taskManaged.getTentativi(), policy.getMaxTentativi(), policy.getIntervallo());
-                taskManaged.setStato(EStatoTask.PRONTO);
-                scheduler.schedulaTaskConRitardo(taskManaged, policy.getIntervallo());
+                        task.getNome(), task.getTentativi(), policy.getMaxTentativi(), policy.getIntervallo());
+                task.setStato(EStatoTask.PRONTO);
+                scheduler.schedulaTaskConRitardo(task, policy.getIntervallo());
             } else {
                 log.error("Task '{}' fallito definitivamente dopo {} tentativi. Workflow {} FALLITO.",
-                        taskManaged.getNome(), taskManaged.getTentativi(), workflow.getId());
+                        task.getNome(), task.getTentativi(), workflow.getId());
                 workflow.setStato(EStatoWorkflow.FALLITO);
+                repositoryWorkflow.aggiornaStato(workflow);
                 workflow.trasmettiStatoAiTask(EStatoTask.FALLITO);
+                workflowAttivi.remove(workflow.getId());
             }
         }
     }
 
     @Transactional
     public synchronized void annullaWorkflow(Workflow workflow) {
-        workflow.inizializzaRuntime(this);
-        workflow.annulla();
+        Workflow attivo = workflowAttivi.getOrDefault(workflow.getId(), workflow);
+        attivo.inizializzaRuntime(this);
+        attivo.annulla();
+        repositoryWorkflow.aggiornaStato(attivo);
         scheduler.svuotaCoda();
-        annullaTuttiTask(workflow);
+        annullaTuttiTask(attivo);
+        workflowAttivi.remove(attivo.getId());
     }
 
     private void annullaTuttiTask(Workflow workflow) {

@@ -25,6 +25,11 @@ public class RepositoryTaskMock implements IRepositoryTask {
     }
 
     @Override
+    public void aggiornaStato(Task task) {
+        tasks.put(task.getId(), task);
+    }
+
+    @Override
     public Optional<Task> findByIdOptional(Long id) {
         return Optional.ofNullable(tasks.get(id));
     }

@@ -5,9 +5,7 @@ import io.quarkus.runtime.StartupEvent;
 import it.unibas.taskscheduler.Utilita;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Task;
-import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.persistenza.IRepositoryTask;
-import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -39,7 +37,7 @@ public class Scheduler {
     IRepositoryTask repositoryTask;
 
     @Inject
-    IRepositoryWorkflow repositoryWorkflow;
+    Engine engine;
 
     void startup(@Observes StartupEvent ev) {
         String strategiaPersistenza = repositoryTask.getClass().getName().indexOf("Mock") != -1 ? "Mock" : "Hibernate";
@@ -80,16 +78,15 @@ public class Scheduler {
                 Task task = codaTaskPronti.poll(500, TimeUnit.MILLISECONDS);
                 if (task == null) continue;
 
-                Workflow workflow = repositoryWorkflow.findByIdOptional(task.getWorkflowId()).orElse(null);
-                if (workflow == null) continue;
+                EStatoWorkflow statoWorkflow = engine.statoWorkflow(task.getWorkflowId());
+                if (statoWorkflow == null) continue;
 
-                EStatoWorkflow statoWf = workflow.getStato();
-                if (statoWf == EStatoWorkflow.IN_PAUSA) {
+                if (statoWorkflow == EStatoWorkflow.IN_PAUSA) {
                     codaTaskPronti.offer(task);
                     Thread.sleep(200);
                     continue;
                 }
-                if (statoWf != EStatoWorkflow.IN_ESECUZIONE) {
+                if (statoWorkflow != EStatoWorkflow.IN_ESECUZIONE) {
                     continue;
                 }
                 log.info("Invio task {} a un executor.", task.getNome());
