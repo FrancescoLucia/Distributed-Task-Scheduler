@@ -113,7 +113,7 @@ public class WorkflowService {
         try {
             return objectMapper.readValue(json, WorkflowImportDTO.class);
         } catch (Exception e) {
-            throw new WorkflowNonValidoException(List.of("JSON non valido: " + e.getMessage()));
+            throw new WorkflowNonValidoException(List.of("Il json non è formattato correttamente"));
         }
     }
 

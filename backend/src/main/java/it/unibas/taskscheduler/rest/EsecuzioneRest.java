@@ -12,7 +12,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 
@@ -43,34 +42,19 @@ public class EsecuzioneRest {
 
     @POST
     @Path("/{id}/pausa")
-    public Response pausa(@PathParam("id") Long id) {
-        try {
-            esecuzioneService.pausa(id);
-            return Response.noContent().build();
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
+    public void pausa(@PathParam("id") Long id) {
+        esecuzioneService.pausa(id);
     }
 
     @POST
     @Path("/{id}/riprendi")
-    public Response riprendi(@PathParam("id") Long id) {
-        try {
-            esecuzioneService.riprendi(id);
-            return Response.noContent().build();
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
+    public void riprendi(@PathParam("id") Long id) {
+        esecuzioneService.riprendi(id);
     }
 
     @POST
     @Path("/{id}/annulla")
-    public Response annulla(@PathParam("id") Long id) {
-        try {
-            esecuzioneService.annulla(id);
-            return Response.noContent().build();
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
+    public void annulla(@PathParam("id") Long id) {
+        esecuzioneService.annulla(id);
     }
 }
