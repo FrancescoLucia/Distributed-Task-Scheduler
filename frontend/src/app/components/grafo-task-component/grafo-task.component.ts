@@ -2,9 +2,16 @@ import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, Simp
 import cytoscape, { Core, ElementDefinition } from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 
-import { ArcoDipendenza, NodoGrafo } from '../../dati-runtime-workflow.service';
+import { ArcoDipendenza, ETipoTask, NodoGrafo } from '../../dati-runtime-workflow.service';
 
 cytoscape.use(dagre);
+
+const ICONE_TIPO: Record<ETipoTask, string> = {
+  MATH: '∑',
+  FILE: '📁',
+  HTTP: '🌐',
+  SCRIPT: '›_',
+};
 
 interface ElementoNodoGrafo {
   id: string;
@@ -47,7 +54,7 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
           style: {
             shape: 'round-rectangle',
             width: 190,
-            height: 84,
+            height: 96,
             'background-color': '#ffffff',
             'border-color': '#d3dde1',
             'border-width': 1.5,
@@ -59,6 +66,7 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
             'text-max-width': '168px',
             'text-valign': 'center',
             'text-halign': 'center',
+            'text-justification': 'center',
             padding: '8px',
             'text-outline-width': 0,
           },
@@ -153,10 +161,12 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private mappaNodo(nodo: NodoGrafo): ElementoNodoGrafo {
     const retry = nodo.tentativi > 0 ? `\n↺ ${nodo.tentativi}` : '';
+    const stato = nodo.stato ? `\n<${this.etichettaStato(nodo.stato)}>` : '';
+    const icona = ICONE_TIPO[nodo.tipo] ? `${ICONE_TIPO[nodo.tipo]}\n\n` : '';
     return {
       id: String(nodo.id),
-      label: `${nodo.nome}\n<${this.etichettaStato(nodo.stato)}>${retry}`,
-      stato: nodo.stato,
+      label: `${icona}${nodo.nome}${stato}${retry}`,
+      stato: nodo.stato ?? '',
     };
   }
 

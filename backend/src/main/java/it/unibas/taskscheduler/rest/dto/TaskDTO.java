@@ -12,6 +12,7 @@ public class TaskDTO {
     private Long id;
     private Long esecuzioneId;
     private String nome;
+    private String tipo;
     private EStatoTask stato;
     private int tentativi;
     private List<Long> dipendenze;
@@ -22,6 +23,7 @@ public class TaskDTO {
         dto.id = task.getId();
         dto.esecuzioneId = task.getEsecuzioneId();
         dto.nome = task.getNome();
+        dto.tipo = task.getCommandType();
         dto.stato = task.getStato();
         dto.tentativi = task.getTentativi();
         dto.dipendenze = task.getDipendenze().stream().map(Task::getId).toList();

@@ -7,6 +7,7 @@ import { BASE_URL, INTERVALLO_POLLING_MS } from './costanti';
 export type EStatoWorkflow = 'IN_PAUSA' | 'IN_ESECUZIONE' | 'COMPLETATO' | 'FALLITO' | 'ANNULLATO' | 'INATTIVO';
 export type EStatoTask = 'IN_ATTESA' | 'PRONTO' | 'IN_ESECUZIONE' | 'COMPLETATO' | 'FALLITO' | 'ANNULLATO';
 export type StatoWorker = 'libero' | 'occupato' | 'inPausa' | 'offline';
+export type ETipoTask = 'SCRIPT' | 'MATH' | 'FILE' | 'HTTP';
 
 export interface NodoWorker {
   id: string;
@@ -46,7 +47,8 @@ export interface EsecuzioneSummary {
 export interface NodoGrafo {
   id: number;
   nome: string;
-  stato: EStatoTask;
+  tipo: ETipoTask;
+  stato: EStatoTask | null;
   tentativi: number;
 }
 
@@ -91,10 +93,28 @@ export class WorkflowService {
     );
   }
 
-  importaWorkflow(): Observable<number> {
-    return this.http.post<number>(`${BASE_URL}/workflow/importa`, null).pipe(
+  importaDemo(): Observable<{ id: number }> {
+    return this.http.post<{ id: number }>(`${BASE_URL}/workflow/importa/demo`, null).pipe(
       tap(() => this.caricaCatalogo())
     );
+  }
+
+  importaDaFile(contenuto: string): Observable<{ id: number }> {
+    return this.http.post<{ id: number }>(`${BASE_URL}/workflow/importa`, contenuto, {
+      headers: { 'Content-Type': 'application/json' },
+    }).pipe(
+      tap(() => this.caricaCatalogo())
+    );
+  }
+
+  rinominaWorkflow(id: number, nome: string): Observable<void> {
+    return this.http.put<void>(`${BASE_URL}/workflow/${id}/nome`, { nome }).pipe(
+      tap(() => this.caricaCatalogo())
+    );
+  }
+
+  urlTemplate(): string {
+    return `${BASE_URL}/workflow/template`;
   }
 
   avviaWorkflow(id: number): Observable<{ esecuzioneId: number }> {

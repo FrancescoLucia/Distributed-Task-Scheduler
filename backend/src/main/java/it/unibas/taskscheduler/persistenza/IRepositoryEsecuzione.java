@@ -10,6 +10,8 @@ public interface IRepositoryEsecuzione {
 
     public void aggiornaStato(EsecuzioneWorkflow esecuzione);
 
+    public void aggiornaNomeWorkflow(Long workflowId, String nome);
+
     public Optional<EsecuzioneWorkflow> findByIdOptional(Long id);
 
     public Optional<EsecuzioneWorkflow> getEsecuzioneInCorso();

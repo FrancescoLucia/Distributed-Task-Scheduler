@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -16,6 +16,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { WorkflowService, WorkflowCatalogo } from '../../dati-runtime-workflow.service';
 import { ConfermaDialogComponent, DatiConferma } from '../conferma-dialog-component/conferma-dialog.component';
+import { RinominaDialogComponent } from '../rinomina-dialog-component/rinomina-dialog.component';
 
 @Component({
   selector: 'app-sezione-catalogo',
@@ -42,11 +43,17 @@ export class SezioneCatalogoComponent implements OnInit {
 
   protected readonly catalogo = this.servizioWorkflow.catalogo;
   protected readonly ricerca = new FormControl('', { nonNullable: true });
+  protected readonly erroriImport = signal<string[]>([]);
+  protected readonly urlTemplate = this.servizioWorkflow.urlTemplate();
 
   protected readonly engineOccupato = computed(() => {
     const stato = this.servizioWorkflow.statoEngine()?.stato;
     return stato === 'IN_ESECUZIONE' || stato === 'IN_PAUSA';
   });
+
+  protected inEsecuzione(id: number): boolean {
+    return this.engineOccupato() && this.servizioWorkflow.statoEngine()?.workflowInCorsoId === id;
+  }
 
   ngOnInit(): void {
     this.ricerca.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe(nome => {
@@ -54,8 +61,39 @@ export class SezioneCatalogoComponent implements OnInit {
     });
   }
 
-  protected importaWorkflow(): void {
-    this.servizioWorkflow.importaWorkflow().subscribe();
+  protected importaDemo(): void {
+    this.servizioWorkflow.importaDemo().subscribe({
+      next: () => this.snackBar.open('Workflow demo importato', undefined, { duration: 3000 }),
+      error: err => this.mostraErrore(err),
+    });
+  }
+
+  protected async importaDaFile(evento: Event): Promise<void> {
+    const input = evento.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const contenuto = await file.text();
+    input.value = '';
+    this.erroriImport.set([]);
+    this.servizioWorkflow.importaDaFile(contenuto).subscribe({
+      next: () => this.snackBar.open('Workflow importato', undefined, { duration: 3000 }),
+      error: err => this.gestisciErroreImport(err),
+    });
+  }
+
+  protected chiudiErrori(): void {
+    this.erroriImport.set([]);
+  }
+
+  protected rinominaWorkflow(workflow: WorkflowCatalogo): void {
+    this.dialog.open(RinominaDialogComponent, { data: { nome: workflow.nome } })
+      .afterClosed().subscribe((nuovoNome: string | undefined) => {
+        if (!nuovoNome || nuovoNome === workflow.nome) return;
+        this.servizioWorkflow.rinominaWorkflow(workflow.id, nuovoNome).subscribe({
+          next: () => this.snackBar.open('Workflow rinominato', undefined, { duration: 3000 }),
+          error: err => this.mostraErrore(err),
+        });
+      });
   }
 
   protected avviaWorkflow(workflow: WorkflowCatalogo): void {
@@ -89,6 +127,15 @@ export class SezioneCatalogoComponent implements OnInit {
     this.dialog.open(ConfermaDialogComponent, { data: dati }).afterClosed().subscribe(confermato => {
       if (confermato) azione();
     });
+  }
+
+  private gestisciErroreImport(err: HttpErrorResponse): void {
+    const errori = err.error?.errori;
+    if (Array.isArray(errori) && errori.length > 0) {
+      this.erroriImport.set(errori);
+    } else {
+      this.mostraErrore(err);
+    }
   }
 
   private mostraErrore(err: HttpErrorResponse): void {

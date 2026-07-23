@@ -39,6 +39,13 @@ public class RepositoryEsecuzioneMock implements IRepositoryEsecuzione {
     }
 
     @Override
+    public void aggiornaNomeWorkflow(Long workflowId, String nome) {
+        esecuzioni.values().stream()
+                .filter(e -> e.getWorkflow() != null && workflowId.equals(e.getWorkflow().getId()))
+                .forEach(e -> e.setNome(nome));
+    }
+
+    @Override
     public Optional<EsecuzioneWorkflow> findByIdOptional(Long id) {
         return Optional.ofNullable(esecuzioni.get(id));
     }

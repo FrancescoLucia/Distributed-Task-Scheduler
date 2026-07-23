@@ -22,6 +22,7 @@ public class GraphDTO {
     public static class NodoDTO {
         private Long id;
         private String nome;
+        private String tipo;
         private EStatoTask stato;
         private int tentativi;
     }
@@ -36,7 +37,7 @@ public class GraphDTO {
     public static GraphDTO from(EsecuzioneWorkflow esecuzione) {
         GraphDTO dto = new GraphDTO();
         dto.nodi = esecuzione.getTasks().stream()
-                .map(t -> new NodoDTO(t.getId(), t.getNome(), t.getStato(), t.getTentativi()))
+                .map(t -> new NodoDTO(t.getId(), t.getNome(), t.getCommandType(), t.getStato(), t.getTentativi()))
                 .toList();
 
         List<DipendenzaDTO> dipendenzeDTO = new ArrayList<>();
@@ -57,7 +58,7 @@ public class GraphDTO {
             idPerNome.put(def.getNome(), indice++);
         }
         dto.nodi = definizione.stream()
-                .map(def -> new NodoDTO(idPerNome.get(def.getNome()), def.getNome(), null, 0))
+                .map(def -> new NodoDTO(idPerNome.get(def.getNome()), def.getNome(), def.getCommandType(), null, 0))
                 .toList();
 
         List<DipendenzaDTO> dipendenzeDTO = new ArrayList<>();

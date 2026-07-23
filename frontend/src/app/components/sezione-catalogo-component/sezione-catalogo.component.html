@@ -11,6 +11,23 @@
       </div>
     }
 
+    @if (erroriImport().length > 0) {
+      <div class="avviso-errori">
+        <div class="intestazione-errori">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>Import non riuscito</span>
+          <button mat-icon-button type="button" class="chiudi-errori" (click)="chiudiErrori()">
+            <mat-icon aria-hidden="true">close</mat-icon>
+          </button>
+        </div>
+        <ul>
+          @for (errore of erroriImport(); track errore) {
+            <li>{{ errore }}</li>
+          }
+        </ul>
+      </div>
+    }
+
     <mat-form-field appearance="outline" class="campo-ricerca">
       <mat-label>Cerca per nome</mat-label>
       <mat-icon matPrefix aria-hidden="true">search</mat-icon>
@@ -29,10 +46,17 @@
               {{ workflow.dataCreazione | date:'dd/MM/yyyy HH:mm' }} · {{ workflow.numeroTask }} task
             </div>
             <div matListItemMeta class="azioni-riga">
+              <button mat-icon-button type="button"
+                [matTooltip]="inEsecuzione(workflow.id) ? 'Non rinominabile durante l\'esecuzione' : 'Rinomina'"
+                [disabled]="inEsecuzione(workflow.id)" (click)="rinominaWorkflow(workflow)">
+                <mat-icon>edit</mat-icon>
+              </button>
               <button mat-icon-button type="button" matTooltip="Avvia workflow" [disabled]="engineOccupato()" (click)="avviaWorkflow(workflow)">
                 <mat-icon>play_arrow</mat-icon>
               </button>
-              <button mat-icon-button type="button" class="azione-elimina" matTooltip="Elimina workflow" (click)="eliminaWorkflow(workflow)">
+              <button mat-icon-button type="button" class="azione-elimina"
+                [matTooltip]="inEsecuzione(workflow.id) ? 'Non eliminabile durante l\'esecuzione' : 'Elimina workflow'"
+                [disabled]="inEsecuzione(workflow.id)" (click)="eliminaWorkflow(workflow)">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
@@ -42,10 +66,20 @@
       </mat-list>
     }
   </mat-card-content>
-  <mat-card-actions align="end">
-    <button mat-flat-button type="button" color="primary" (click)="importaWorkflow()">
-      <mat-icon>upload</mat-icon>
-      Importa workflow
+  <mat-card-actions class="azioni-catalogo">
+    <a mat-button [href]="urlTemplate" download="workflow-template.json">
+      <mat-icon>download</mat-icon>
+      Scarica template
+    </a>
+    <span class="spaziatore"></span>
+    <button mat-button type="button" (click)="importaDemo()">
+      <mat-icon>science</mat-icon>
+      Importa demo
     </button>
+    <button mat-flat-button type="button" color="primary" (click)="inputFile.click()">
+      <mat-icon>upload</mat-icon>
+      Importa da file
+    </button>
+    <input #inputFile type="file" accept=".json,application/json" hidden (change)="importaDaFile($event)" />
   </mat-card-actions>
 </mat-card>

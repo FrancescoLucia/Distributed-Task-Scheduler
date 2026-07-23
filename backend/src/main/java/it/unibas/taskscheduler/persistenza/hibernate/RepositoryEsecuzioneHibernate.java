@@ -32,21 +32,27 @@ public class RepositoryEsecuzioneHibernate implements IRepositoryEsecuzione, Pan
 
     @Override
     @Transactional
+    public void aggiornaNomeWorkflow(Long workflowId, String nome) {
+        update("nome = ?1 where workflow.id = ?2", nome, workflowId);
+    }
+
+    @Override
+    @Transactional
     public Optional<EsecuzioneWorkflow> findByIdOptional(Long id) {
-        return find("""
+        return stream("""
                         select distinct e
                         from EsecuzioneWorkflow e
                         left join fetch e.tasks t
                         left join fetch t.dipendenze
                         where e.id = ?1
                         """, id)
-                .firstResultOptional();
+                .findFirst();
     }
 
     @Override
     @Transactional
     public Optional<EsecuzioneWorkflow> getEsecuzioneInCorso() {
-        return find("""
+        return stream("""
                         select distinct e
                         from EsecuzioneWorkflow e
                         left join fetch e.tasks t
@@ -54,7 +60,7 @@ public class RepositoryEsecuzioneHibernate implements IRepositoryEsecuzione, Pan
                         where e.stato in (?1, ?2)
                         order by e.dataInizio asc, e.id asc
                         """, EStatoWorkflow.IN_ESECUZIONE, EStatoWorkflow.IN_PAUSA)
-                .firstResultOptional();
+                .findFirst();
     }
 
     @Override
