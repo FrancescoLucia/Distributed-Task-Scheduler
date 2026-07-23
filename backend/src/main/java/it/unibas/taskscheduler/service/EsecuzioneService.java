@@ -2,6 +2,7 @@ package it.unibas.taskscheduler.service;
 
 import it.unibas.taskscheduler.command.CommandMapper;
 import it.unibas.taskscheduler.engine.Engine;
+import it.unibas.taskscheduler.engine.scheduling.EAlgoritmoSchedulazione;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.EsecuzioneWorkflow;
 import it.unibas.taskscheduler.modello.Task;
@@ -38,10 +39,11 @@ public class EsecuzioneService {
     WorkflowService workflowService;
 
     @Transactional
-    public Long avvia(Long workflowId) {
+    public Long avvia(Long workflowId, String algoritmo) {
         repositoryEsecuzione.getEsecuzioneInCorso().ifPresent(inCorso -> {
             throw new IllegalStateException("Terminare prima l'esecuzione in corso");
         });
+        EAlgoritmoSchedulazione algoritmoScelto = EAlgoritmoSchedulazione.valueOf(algoritmo);
         Workflow workflow = repositoryWorkflow.findByIdOptional(workflowId)
                 .orElseThrow(() -> new NotFoundException("Workflow non trovato: " + workflowId));
 
@@ -49,7 +51,7 @@ public class EsecuzioneService {
         EsecuzioneWorkflow esecuzione = costruisciEsecuzione(workflow, definizione);
         esecuzione.inizializzaFigli(engine);
         repositoryEsecuzione.persist(esecuzione);
-        engine.avviaEsecuzione(esecuzione);
+        engine.avviaEsecuzione(esecuzione, algoritmoScelto.getStrategia());
         return esecuzione.getId();
     }
 

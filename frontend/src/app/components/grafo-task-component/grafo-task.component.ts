@@ -39,6 +39,8 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private cy?: Core;
   private resizeObserver?: ResizeObserver;
+  private frameRicalcolo?: number;
+  private chiaveStrutturaGrafo = '';
 
   ngAfterViewInit(): void {
     this.cy = cytoscape({
@@ -118,14 +120,11 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
         },
       ],
     });
+    this.chiaveStrutturaGrafo = this.chiaveStruttura();
 
-    // this.resizeObserver = new ResizeObserver(() => {
-    //   this.cy?.resize();
-    //   this.cy?.fit(undefined, 40);
-    // });
-    // this.resizeObserver.observe(this.contenitoreGrafo.nativeElement);
-
-    // this.cy.fit(undefined, 40);
+    this.resizeObserver = new ResizeObserver(() => this.schedulaRicalcoloLayout());
+    this.resizeObserver.observe(this.contenitoreGrafo.nativeElement);
+    this.schedulaRicalcoloLayout();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -133,13 +132,22 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
+    const nuovaChiaveStruttura = this.chiaveStruttura();
+    if (nuovaChiaveStruttura === this.chiaveStrutturaGrafo) {
+      this.aggiornaDatiNodi();
+      return;
+    }
+
+    this.chiaveStrutturaGrafo = nuovaChiaveStruttura;
     this.cy.elements().remove();
     this.cy.add(this.elementiGrafo());
-    this.cy.layout(this.layoutDagre()).run();
-    this.cy.fit(undefined, 40);
+    this.schedulaRicalcoloLayout();
   }
 
   ngOnDestroy(): void {
+    if (this.frameRicalcolo !== undefined) {
+      cancelAnimationFrame(this.frameRicalcolo);
+    }
     this.resizeObserver?.disconnect();
     this.cy?.destroy();
   }
@@ -177,6 +185,30 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
     };
   }
 
+  private aggiornaDatiNodi(): void {
+    const cy = this.cy;
+    if (!cy) return;
+
+    cy.batch(() => {
+      for (const nodo of this.nodi) {
+        cy.getElementById(String(nodo.id)).data(this.mappaNodo(nodo));
+      }
+    });
+  }
+
+  private chiaveStruttura(): string {
+    const nodi = this.nodi
+      .map((nodo) => String(nodo.id))
+      .sort()
+      .join(',');
+    const dipendenze = this.dipendenze
+      .map((dipendenza) => `${dipendenza.sorgente}->${dipendenza.destinazione}`)
+      .sort()
+      .join(',');
+
+    return `${nodi}|${dipendenze}`;
+  }
+
   private etichettaStato(stato: string): string {
     const etichette: Record<string, string> = {
       IN_ATTESA: 'In attesa',
@@ -201,5 +233,24 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
       animate: false,
       fit: true,
     } as const;
+  }
+
+  private schedulaRicalcoloLayout(): void {
+    if (this.frameRicalcolo !== undefined) {
+      cancelAnimationFrame(this.frameRicalcolo);
+    }
+
+    this.frameRicalcolo = requestAnimationFrame(() => {
+      this.frameRicalcolo = undefined;
+      const contenitore = this.contenitoreGrafo.nativeElement;
+      if (!this.cy || contenitore.clientWidth === 0 || contenitore.clientHeight === 0) {
+        return;
+      }
+
+      this.cy.resize();
+      this.cy.layout(this.layoutDagre()).run();
+      this.cy.fit(undefined, 40);
+      this.cy.center();
+    });
   }
 }

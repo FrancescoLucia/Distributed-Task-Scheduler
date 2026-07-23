@@ -14,7 +14,13 @@ export interface DatiRinomina {
   standalone: true,
   imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule],
   templateUrl: './rinomina-dialog.component.html',
-  styles: `.campo-nome { width: 360px; max-width: 100%; }`,
+  styles: `
+    .campo-nome {
+      width: 360px;
+      max-width: 100%;
+      margin-top: 16px;
+    }
+  `,
 })
 export class RinominaDialogComponent {
   private readonly dati = inject<DatiRinomina>(MAT_DIALOG_DATA);

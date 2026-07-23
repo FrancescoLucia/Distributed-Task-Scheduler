@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
 import { BASE_URL, INTERVALLO_POLLING_MS } from './costanti';
+import { AlgoritmoSchedulazione } from './types/algoritmo-schedulazione';
 
 export type EStatoWorkflow = 'IN_PAUSA' | 'IN_ESECUZIONE' | 'COMPLETATO' | 'FALLITO' | 'ANNULLATO' | 'INATTIVO';
 export type EStatoTask = 'IN_ATTESA' | 'PRONTO' | 'IN_ESECUZIONE' | 'COMPLETATO' | 'FALLITO' | 'ANNULLATO';
@@ -78,6 +79,7 @@ export class WorkflowService {
   readonly grafoWorkflow = signal<WorkflowGraph | null>(null);
   readonly grafoStorico = signal<WorkflowGraph | null>(null);
   readonly esecuzioneAttivaId = signal<number | null>(null);
+  readonly esecuzioneCorrente = signal<EsecuzioneSummary | null>(null);
   readonly configurazioneEngine = signal<ConfigurazioneEngine | null>(null);
 
   private intervalloPolling: ReturnType<typeof setInterval> | null = null;
@@ -117,8 +119,8 @@ export class WorkflowService {
     return `${BASE_URL}/workflow/template`;
   }
 
-  avviaWorkflow(id: number): Observable<{ esecuzioneId: number }> {
-    return this.http.post<{ esecuzioneId: number }>(`${BASE_URL}/workflow/${id}/avvia`, null).pipe(
+  avviaWorkflow(id: number, algoritmo: AlgoritmoSchedulazione): Observable<{ esecuzioneId: number }> {
+    return this.http.post<{ esecuzioneId: number }>(`${BASE_URL}/workflow/${id}/avvia?algoritmo=${algoritmo}`, null).pipe(
       tap(risposta => this.avviaPolling(risposta.esecuzioneId))
     );
   }
@@ -151,6 +153,8 @@ export class WorkflowService {
           this.avviaPolling(stato.esecuzioneInCorsoId ?? Number(idSalvato));
         } else {
           localStorage.removeItem(this.STORAGE_KEY);
+          this.caricaGrafo(Number(idSalvato));
+          this.controllaEsecuzione(Number(idSalvato));
         }
       }
     });
@@ -192,22 +196,29 @@ export class WorkflowService {
 
   avviaPolling(esecuzioneId: number): void {
     this.esecuzioneAttivaId.set(esecuzioneId);
+    this.esecuzioneCorrente.set(null);
     localStorage.setItem(this.STORAGE_KEY, String(esecuzioneId));
     this.fermaPolling();
     this.caricaStatoEngine();
     this.caricaGrafo(esecuzioneId);
+    this.controllaEsecuzione(esecuzioneId);
     this.intervalloPolling = setInterval(() => {
       this.caricaGrafo(esecuzioneId);
-      this.http.get<EngineStatus>(`${BASE_URL}/engine/status`).subscribe(stato => {
-        this.statoEngine.set(stato);
-        if (stato.stato === 'COMPLETATO' || stato.stato === 'FALLITO' || stato.stato === 'ANNULLATO') {
-          this.fermaPolling();
-          localStorage.removeItem(this.STORAGE_KEY);
-          this.caricaCatalogo();
-          this.caricaEsecuzioni();
-        }
-      });
+      this.caricaStatoEngine();
+      this.controllaEsecuzione(esecuzioneId);
     }, INTERVALLO_POLLING_MS);
+  }
+
+  private controllaEsecuzione(esecuzioneId: number): void {
+    this.http.get<EsecuzioneSummary>(`${BASE_URL}/esecuzioni/${esecuzioneId}`).subscribe(esecuzione => {
+      this.esecuzioneCorrente.set(esecuzione);
+      if (esecuzione.stato === 'COMPLETATO' || esecuzione.stato === 'FALLITO' || esecuzione.stato === 'ANNULLATO') {
+        this.fermaPolling();
+        localStorage.removeItem(this.STORAGE_KEY);
+        this.caricaCatalogo();
+        this.caricaEsecuzioni();
+      }
+    });
   }
 
   fermaPolling(): void {

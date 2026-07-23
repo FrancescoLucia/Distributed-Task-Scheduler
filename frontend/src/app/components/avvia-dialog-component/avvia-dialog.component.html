@@ -1,0 +1,19 @@
+<h2 mat-dialog-title>Avvia workflow</h2>
+
+<mat-dialog-content>
+  <p>Avviare una nuova esecuzione di "{{ dati.nomeWorkflow }}"?</p>
+
+  <mat-form-field appearance="outline" class="campo-algoritmo">
+    <mat-label>Algoritmo di schedulazione</mat-label>
+    <mat-select [formControl]="algoritmo">
+      @for (valore of algoritmi; track valore) {
+        <mat-option [value]="valore">{{ etichette[valore] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="annulla()">Annulla</button>
+  <button mat-flat-button type="button" color="primary" (click)="conferma()">Avvia</button>
+</mat-dialog-actions>

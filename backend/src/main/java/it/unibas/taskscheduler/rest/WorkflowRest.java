@@ -8,6 +8,7 @@ import it.unibas.taskscheduler.service.WorkflowService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -81,7 +82,8 @@ public class WorkflowRest {
 
     @POST
     @Path("/{id}/avvia")
-    public Response avvia(@PathParam("id") Long id) {
-        return Response.ok(Map.of("esecuzioneId", esecuzioneService.avvia(id))).build();
+    public Response avvia(@PathParam("id") Long id,
+                          @QueryParam("algoritmo") @DefaultValue("FIGLI_DESC") String algoritmo) {
+        return Response.ok(Map.of("esecuzioneId", esecuzioneService.avvia(id, algoritmo))).build();
     }
 }

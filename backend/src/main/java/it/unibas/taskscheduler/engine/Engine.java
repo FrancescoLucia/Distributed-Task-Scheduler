@@ -6,6 +6,7 @@ import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.EsecuzioneWorkflow;
 import it.unibas.taskscheduler.modello.RetryPolicy;
 import it.unibas.taskscheduler.modello.Task;
+import it.unibas.taskscheduler.engine.scheduling.StrategiaSchedulazione;
 import it.unibas.taskscheduler.observable.TaskObserver;
 import it.unibas.taskscheduler.persistenza.IRepositoryConfigurazioneEngine;
 import it.unibas.taskscheduler.persistenza.IRepositoryEsecuzione;
@@ -84,7 +85,7 @@ public class Engine implements TaskObserver {
     }
 
     @Transactional
-    public synchronized void avviaEsecuzione(EsecuzioneWorkflow esecuzione) {
+    public synchronized void avviaEsecuzione(EsecuzioneWorkflow esecuzione, StrategiaSchedulazione strategia) {
         assert esecuzione != null;
         log.info("Avvio esecuzione '{}'", esecuzione.getNome());
         checkCambioStatoValido(esecuzione.getStato(), EStatoWorkflow.IN_ESECUZIONE);
@@ -92,6 +93,7 @@ public class Engine implements TaskObserver {
         esecuzione.avvia();
         esecuzioniAttive.put(esecuzione.getId(), esecuzione);
         repositoryEsecuzione.aggiornaStato(esecuzione);
+        scheduler.setStrategia(strategia);
         schedulaTaskEsecuzione(esecuzione);
     }
 
@@ -149,8 +151,10 @@ public class Engine implements TaskObserver {
                 log.error("Task '{}' fallito definitivamente dopo {} tentativi. Esecuzione {} FALLITA.",
                         task.getNome(), task.getTentativi(), esecuzione.getId());
                 esecuzione.setStato(EStatoWorkflow.FALLITO);
-                terminaEsecuzione(esecuzione);
+                scheduler.svuotaCoda();
+                annullaTaskInEsecuzione(esecuzione);
                 esecuzione.trasmettiStatoAiTask(EStatoTask.FALLITO);
+                terminaEsecuzione(esecuzione);
             }
         }
     }
@@ -174,10 +178,14 @@ public class Engine implements TaskObserver {
     private void annullaTuttiTask(EsecuzioneWorkflow esecuzione) {
         esecuzione.getTasks().stream()
                 .filter(Task::isInEsecuzione)
-                .forEach(t -> {
-                    t.getAzione().annulla();
-                });
+                .forEach(t -> t.getAzione().annulla());
         esecuzione.trasmettiStatoAiTask(EStatoTask.ANNULLATO);
+    }
+
+    private void annullaTaskInEsecuzione(EsecuzioneWorkflow esecuzione) {
+        esecuzione.getTasks().stream()
+                .filter(Task::isInEsecuzione)
+                .forEach(t -> t.getAzione().annulla());
     }
 
     private boolean checkCambioStatoValido(EStatoWorkflow vecchioStato, EStatoWorkflow nuovoStato) {

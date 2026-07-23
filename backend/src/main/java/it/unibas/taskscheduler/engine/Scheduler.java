@@ -2,7 +2,8 @@ package it.unibas.taskscheduler.engine;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
-import it.unibas.taskscheduler.Utilita;
+import it.unibas.taskscheduler.engine.scheduling.FigliDecrescente;
+import it.unibas.taskscheduler.engine.scheduling.StrategiaSchedulazione;
 import it.unibas.taskscheduler.modello.EStatoWorkflow;
 import it.unibas.taskscheduler.modello.Task;
 import it.unibas.taskscheduler.persistenza.IRepositoryTask;
@@ -28,8 +29,9 @@ public class Scheduler {
 
     private ExecutorService threadPoolWorkers;
     private ScheduledExecutorService scheduledExecutor;
+    private volatile StrategiaSchedulazione strategiaCorrente = new FigliDecrescente();
     private final BlockingQueue<Task> codaTaskPronti = new PriorityBlockingQueue<>(
-            10, Utilita::comparaTaskPerNumeroFigli);
+            10, (task1, task2) -> strategiaCorrente.compare(task1, task2));
     private volatile boolean inEsecuzione = true;
     private Thread threadScheduler;
 
@@ -56,6 +58,10 @@ public class Scheduler {
         threadScheduler.interrupt();
         threadPoolWorkers.shutdown();
         scheduledExecutor.shutdown();
+    }
+
+    public void setStrategia(StrategiaSchedulazione strategia) {
+        this.strategiaCorrente = strategia;
     }
 
     public void schedulaTask(Task task) {

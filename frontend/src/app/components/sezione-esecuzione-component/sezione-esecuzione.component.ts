@@ -36,7 +36,13 @@ export class SezioneEsecuzioneComponent {
 
   protected readonly statoEngine = this.servizioWorkflow.statoEngine;
   protected readonly grafoWorkflow = this.servizioWorkflow.grafoWorkflow;
+  protected readonly esecuzioneCorrente = this.servizioWorkflow.esecuzioneCorrente;
   protected readonly etichettaStato = etichettaStato;
+
+  protected readonly terminata = computed(() => {
+    const stato = this.esecuzioneCorrente()?.stato;
+    return stato === 'FALLITO' || stato === 'ANNULLATO' || stato === 'COMPLETATO';
+  });
 
   protected readonly taskCompletati = computed(() =>
     this.grafoWorkflow()?.nodi.filter(n => n.stato === 'COMPLETATO').length ?? 0

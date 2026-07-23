@@ -53,6 +53,32 @@ h1 {
   --mat-button-outlined-outline-color: #dba5a6;
 }
 
+.avviso-esito {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font: var(--mat-sys-body-medium);
+  font-weight: 600;
+}
+
+.avviso-fallito {
+  background: #f8d7da;
+  color: #9d1c1f;
+}
+
+.avviso-annullato {
+  background: #fff1d6;
+  color: #9a5b00;
+}
+
+.avviso-completato {
+  background: #dff3e5;
+  color: #1b6e35;
+}
+
 .griglia-dashboard {
   display: grid;
   grid-template-columns: 1fr;

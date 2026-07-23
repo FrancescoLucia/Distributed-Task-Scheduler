@@ -17,6 +17,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { WorkflowService, WorkflowCatalogo } from '../../dati-runtime-workflow.service';
 import { ConfermaDialogComponent, DatiConferma } from '../conferma-dialog-component/conferma-dialog.component';
 import { RinominaDialogComponent } from '../rinomina-dialog-component/rinomina-dialog.component';
+import { AvviaDialogComponent } from '../avvia-dialog-component/avvia-dialog.component';
+import { AlgoritmoSchedulazione } from '../../types/algoritmo-schedulazione';
 
 @Component({
   selector: 'app-sezione-catalogo',
@@ -97,16 +99,14 @@ export class SezioneCatalogoComponent implements OnInit {
   }
 
   protected avviaWorkflow(workflow: WorkflowCatalogo): void {
-    this.conferma({
-      titolo: 'Avvia workflow',
-      messaggio: `Avviare una nuova esecuzione di "${workflow.nome}"?`,
-      testoConferma: 'Avvia',
-    }, () => {
-      this.servizioWorkflow.avviaWorkflow(workflow.id).subscribe({
-        next: () => this.snackBar.open(`Esecuzione di "${workflow.nome}" avviata`, undefined, { duration: 3000 }),
-        error: err => this.mostraErrore(err),
+    this.dialog.open(AvviaDialogComponent, { data: { nomeWorkflow: workflow.nome } })
+      .afterClosed().subscribe((algoritmo: AlgoritmoSchedulazione | undefined) => {
+        if (!algoritmo) return;
+        this.servizioWorkflow.avviaWorkflow(workflow.id, algoritmo).subscribe({
+          next: () => this.snackBar.open(`Esecuzione di "${workflow.nome}" avviata`, undefined, { duration: 3000 }),
+          error: err => this.mostraErrore(err),
+        });
       });
-    });
   }
 
   protected eliminaWorkflow(workflow: WorkflowCatalogo): void {

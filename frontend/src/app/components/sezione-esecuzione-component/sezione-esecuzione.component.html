@@ -1,33 +1,54 @@
-<section class="intestazione">
-  <div>
-    <p class="soprattitolo">Workflow in esecuzione</p>
-    <h1>{{ statoEngine()?.workflowInCorsoNome ?? 'Task Scheduler' }}</h1>
-  </div>
-  @if (grafoWorkflow()) {
-    <div class="controlli">
-      @if (statoEngine()?.stato !== 'IN_PAUSA') {
-        <button mat-stroked-button type="button" matTooltip="Metti in pausa" (click)="mettiInPausa()"
-          [disabled]="statoEngine()?.stato !== 'IN_ESECUZIONE'">
-          <mat-icon aria-hidden="true">pause</mat-icon>
-          Pausa
-        </button>
-      }
-      @if (statoEngine()?.stato === 'IN_PAUSA') {
-        <button mat-flat-button type="button" color="primary" matTooltip="Riprendi esecuzione" (click)="riprendi()">
-          <mat-icon aria-hidden="true">play_arrow</mat-icon>
-          Riprendi
-        </button>
-      }
-      <button mat-stroked-button type="button" class="azione-pericolo" matTooltip="Annulla workflow" (click)="annullaWorkflow()"
-        [disabled]="statoEngine()?.stato !== 'IN_ESECUZIONE' && statoEngine()?.stato !== 'IN_PAUSA'">
-        <mat-icon aria-hidden="true">stop_circle</mat-icon>
-        Annulla
-      </button>
-    </div>
-  }
-</section>
-
 @if (grafoWorkflow()) {
+  <section class="intestazione">
+    <div>
+      <p class="soprattitolo">Workflow in esecuzione</p>
+      <h1>{{ statoEngine()?.workflowInCorsoNome ?? 'Esecuzione senza nome' }}</h1>
+    </div>
+    @if (!terminata()) {
+      <div class="controlli">
+        @if (statoEngine()?.stato !== 'IN_PAUSA') {
+          <button mat-stroked-button type="button" matTooltip="Metti in pausa" (click)="mettiInPausa()"
+            [disabled]="statoEngine()?.stato !== 'IN_ESECUZIONE'">
+            <mat-icon aria-hidden="true">pause</mat-icon>
+            Pausa
+          </button>
+        }
+        @if (statoEngine()?.stato === 'IN_PAUSA') {
+          <button mat-flat-button type="button" color="primary" matTooltip="Riprendi esecuzione" (click)="riprendi()">
+            <mat-icon aria-hidden="true">play_arrow</mat-icon>
+            Riprendi
+          </button>
+        }
+        <button mat-stroked-button type="button" class="azione-pericolo" matTooltip="Annulla workflow" (click)="annullaWorkflow()"
+          [disabled]="statoEngine()?.stato !== 'IN_ESECUZIONE' && statoEngine()?.stato !== 'IN_PAUSA'">
+          <mat-icon aria-hidden="true">stop_circle</mat-icon>
+          Annulla
+        </button>
+      </div>
+    }
+  </section>
+
+  @if (esecuzioneCorrente(); as esecuzione) {
+    @if (esecuzione.stato === 'FALLITO') {
+      <div class="avviso-esito avviso-fallito">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>Workflow fallito</span>
+      </div>
+    }
+    @if (esecuzione.stato === 'ANNULLATO') {
+      <div class="avviso-esito avviso-annullato">
+        <mat-icon aria-hidden="true">cancel</mat-icon>
+        <span>Workflow annullato</span>
+      </div>
+    }
+    @if (esecuzione.stato === 'COMPLETATO') {
+      <div class="avviso-esito avviso-completato">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>Workflow completato</span>
+      </div>
+    }
+  }
+
   <section class="griglia-dashboard">
     <app-sezione-grafo [grafo]="grafoWorkflow()!"></app-sezione-grafo>
 
