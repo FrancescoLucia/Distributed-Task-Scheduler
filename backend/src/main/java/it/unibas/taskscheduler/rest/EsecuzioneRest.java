@@ -1,6 +1,7 @@
 package it.unibas.taskscheduler.rest;
 
 import it.unibas.taskscheduler.rest.dto.EsecuzioneSummaryDTO;
+import it.unibas.taskscheduler.rest.dto.EsecuzioneRuntimeDTO;
 import it.unibas.taskscheduler.rest.dto.GraphDTO;
 import it.unibas.taskscheduler.service.EsecuzioneService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -38,6 +39,12 @@ public class EsecuzioneRest {
     @Path("/{id}/graph")
     public GraphDTO getGrafo(@PathParam("id") Long id) {
         return esecuzioneService.getGrafo(id);
+    }
+
+    @GET
+    @Path("/{id}/runtime")
+    public EsecuzioneRuntimeDTO getRuntime(@PathParam("id") Long id) {
+        return esecuzioneService.getRuntime(id);
     }
 
     @POST

@@ -10,6 +10,8 @@ import it.unibas.taskscheduler.modello.Workflow;
 import it.unibas.taskscheduler.persistenza.IRepositoryEsecuzione;
 import it.unibas.taskscheduler.persistenza.IRepositoryWorkflow;
 import it.unibas.taskscheduler.rest.dto.DefinizioneTaskDTO;
+import it.unibas.taskscheduler.rest.dto.EngineStatusDTO;
+import it.unibas.taskscheduler.rest.dto.EsecuzioneRuntimeDTO;
 import it.unibas.taskscheduler.rest.dto.EsecuzioneSummaryDTO;
 import it.unibas.taskscheduler.rest.dto.GraphDTO;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -113,5 +115,16 @@ public class EsecuzioneService {
                 .orElseThrow(() -> new NotFoundException("Esecuzione non trovata: " + id));
         esecuzione.ricostruisciFigli();
         return GraphDTO.from(esecuzione);
+    }
+
+    @Transactional
+    public EsecuzioneRuntimeDTO getRuntime(Long id) {
+        EsecuzioneWorkflow esecuzione = repositoryEsecuzione.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Esecuzione non trovata: " + id));
+        esecuzione.ricostruisciFigli();
+        return new EsecuzioneRuntimeDTO(
+                EngineStatusDTO.from(esecuzione),
+                EsecuzioneSummaryDTO.from(esecuzione),
+                GraphDTO.from(esecuzione));
     }
 }

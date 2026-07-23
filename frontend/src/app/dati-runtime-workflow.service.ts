@@ -64,6 +64,12 @@ export interface WorkflowGraph {
   dipendenze: ArcoDipendenza[];
 }
 
+export interface EsecuzioneRuntime {
+  engineStatus: EngineStatus;
+  esecuzione: EsecuzioneSummary;
+  graph: WorkflowGraph;
+}
+
 export interface ConfigurazioneEngine {
   maxTentativi: number;
   intervallo: number;
@@ -154,17 +160,10 @@ export class WorkflowService {
           this.avviaPolling(stato.esecuzioneInCorsoId ?? Number(idSalvato));
         } else {
           localStorage.removeItem(this.STORAGE_KEY);
-          this.caricaGrafo(Number(idSalvato));
-          this.controllaEsecuzione(Number(idSalvato));
+          this.caricaRuntime(Number(idSalvato));
         }
       }
     });
-  }
-
-  private caricaGrafo(esecuzioneId: number): void {
-    this.http.get<WorkflowGraph>(`${BASE_URL}/esecuzioni/${esecuzioneId}/graph`).subscribe(grafo =>
-      this.grafoWorkflow.set(grafo)
-    );
   }
 
   caricaConfigurazione(): void {
@@ -200,19 +199,18 @@ export class WorkflowService {
     this.esecuzioneCorrente.set(null);
     localStorage.setItem(this.STORAGE_KEY, String(esecuzioneId));
     this.fermaPolling();
-    this.caricaStatoEngine();
-    this.caricaGrafo(esecuzioneId);
-    this.controllaEsecuzione(esecuzioneId);
+    this.caricaRuntime(esecuzioneId);
     this.intervalloPolling = setInterval(() => {
-      this.caricaGrafo(esecuzioneId);
-      this.caricaStatoEngine();
-      this.controllaEsecuzione(esecuzioneId);
+      this.caricaRuntime(esecuzioneId);
     }, INTERVALLO_POLLING_MS);
   }
 
-  private controllaEsecuzione(esecuzioneId: number): void {
-    this.http.get<EsecuzioneSummary>(`${BASE_URL}/esecuzioni/${esecuzioneId}`).subscribe(esecuzione => {
-      this.esecuzioneCorrente.set(esecuzione);
+  private caricaRuntime(esecuzioneId: number): void {
+    this.http.get<EsecuzioneRuntime>(`${BASE_URL}/esecuzioni/${esecuzioneId}/runtime`).subscribe(runtime => {
+      this.statoEngine.set(runtime.engineStatus);
+      this.grafoWorkflow.set(runtime.graph);
+      this.esecuzioneCorrente.set(runtime.esecuzione);
+      const esecuzione = runtime.esecuzione;
       if (esecuzione.stato === 'COMPLETATO' || esecuzione.stato === 'FALLITO' || esecuzione.stato === 'ANNULLATO') {
         this.fermaPolling();
         localStorage.removeItem(this.STORAGE_KEY);
