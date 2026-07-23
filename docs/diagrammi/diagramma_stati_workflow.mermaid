@@ -1,0 +1,18 @@
+---
+title: EStatoWorkflow
+---
+stateDiagram-v2
+    direction LR
+
+    [*] --> IN_PAUSA : EsecuzioneWorkflow creata
+
+    IN_PAUSA --> IN_ESECUZIONE : avvia() / riprendi()
+    IN_ESECUZIONE --> IN_PAUSA : pausa()
+
+    IN_ESECUZIONE --> COMPLETATO : Tutti i Task COMPLETATI
+    IN_ESECUZIONE --> FALLITO : Task FALLITO senza retry residui
+    IN_ESECUZIONE --> ANNULLATO : annulla()
+
+    COMPLETATO --> [*]
+    FALLITO --> [*]
+    ANNULLATO --> [*]

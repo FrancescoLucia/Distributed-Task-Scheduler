@@ -1,33 +1,51 @@
 classDiagram
     direction TD
 
-    class Engine {
-        <<Singleton>>
-        -numeroWorkers: int
-        +avviaWorkflow(workflow: Workflow)
-        +aggiorna(task: Task)
-        +onTaskCompletato(task: Task)
-        +onTaskFallito(task: Task)
-        +onTaskAnnullato(task: Task)
-        +onTaskPronto(task: Task)
+    class Workflow {
+        -id: Long
+        -nome: String
+        -dataCreazione: LocalDateTime
+        -definizioneJson: String
+        -numeroTask: int
     }
 
-    class Workflow {
+    class EsecuzioneWorkflow {
+        -id: Long
         -nome: String
-        -dataCreazione: String
+        -dataInizio: LocalDateTime
+        -dataFine: LocalDateTime
         -stato: EStatoWorkflow
-        +addTask(task: Task)
+        -tasks: Set~Task~
+        +avvia()
+        +pausa()
+        +riprendi()
+        +annulla()
+        +aggiungiTask(task: Task)
+        +trasmettiStatoAiTask(stato: EStatoTask)
+        +ricostruisciFigli()
+        +inizializzaFigli(observer: TaskObserver)
+        +inizializzaRuntime(observer: TaskObserver)
     }
 
     class Task {
-        -id: int
+        -id: Long
         -nome: String
         -stato: EStatoTask
         -azione: Command
+        -dipendenze: List~Task~
+        -figli: List~Task~
         -tentativi: int
-        -observers: List~TaskObserver~
-        +cambiaStato(nuovoStato: EStatoTask)
-        +getAzione() Command
+        -commandType: String
+        -commandPayload: String
+        -errore: String
+        -observer: List~TaskObserver~
+        +setStato(nuovoStato: EStatoTask)
+        +setAzione(azione: Command)
+        +esegui()
+        +annulla()
+        +incrementaTentativi()
+        +isCompletato() boolean
+        +isInEsecuzione() boolean
     }
 
     class TaskObserver {
@@ -35,11 +53,10 @@ classDiagram
         +aggiorna(task: Task)
     }
 
-    class TaskSubject {
+    class Observable {
         <<Interface>>
         +aggiungiObserver(observer: TaskObserver)
-        +rimuoviObserver(observer: TaskObserver)
-        +notifyObservers()
+        +notifica()
     }
 
     class Command {
@@ -48,85 +65,182 @@ classDiagram
         +annulla()
     }
 
-    class ChiamataAPICommand {
-        -endpoint: String
-        -payload: String
+    class ScriptCommand {
+        -comando: String
         +esegui()
         +annulla()
     }
 
-    class QuerySQLCommand {
-        -query: String
-        -dbUrl: String
+    class CalcoloCommand {
+        -operazione: EOperazioneMath
+        -n: int
         +esegui()
         +annulla()
     }
-    
-    class ScriptCommand {
-        -scriptPath: String
+
+    class FileIOCommand {
+        -operazione: EOperazioneFile
+        -path: String
+        -contenuto: String
         +esegui()
         +annulla()
+    }
+
+    class HttpRequestCommand {
+        -url: String
+        -metodo: String
+        -corpo: String
+        +esegui()
+        +annulla()
+    }
+
+    class CommandMapper {
+        <<Factory>>
+        +from(type: String, payload: String) Command
+        +typeOf(command: Command) String
+        +payloadOf(command: Command) String
     }
 
     class EStatoTask {
         <<Enum>>
-        IN_ATTESA, PRONTO, IN_ESECUZIONE, FALLITO, ANNULLATO, COMPLETATO
+        IN_ATTESA, PRONTO, IN_ESECUZIONE, COMPLETATO, FALLITO, ANNULLATO
     }
 
     class EStatoWorkflow {
         <<Enum>>
-        IN_ESECUZIONE, COMPLETATO, FALLITO, IN_PAUSA, ANNULLATO
+        IN_ESECUZIONE, IN_PAUSA, COMPLETATO, FALLITO, ANNULLATO
     }
-    
+
+    class EStatoEngine {
+        <<Enum>>
+        INATTIVO, IN_ESECUZIONE, IN_PAUSA
+    }
+
+    class Engine {
+        <<ApplicationScoped, implementa TaskObserver>>
+        -esecuzioniAttive: Map~Long, EsecuzioneWorkflow~
+        +avviaEsecuzione(esecuzione: EsecuzioneWorkflow, strategia: EAlgoritmoSchedulazione)
+        +pausaEsecuzione(id: Long)
+        +riprendiEsecuzione(id: Long)
+        +annullaEsecuzione(esecuzione: EsecuzioneWorkflow)
+        +aggiorna(task: Task)
+        +recuperaEsecuzioniAttive(evento: StartupEvent)
+    }
+
     class Scheduler {
-        <<Singleton>>
-        -codaTaskPronti: Queue~Task~
-        +schedulaEsecuzione(Task)
+        <<ApplicationScoped>>
+        -numeroWorker: int
+        -codaTaskPronti: PriorityBlockingQueue~Task~
+        -strategiaCorrente: StrategiaSchedulazione
+        +setStrategia(strategia: StrategiaSchedulazione)
+        +schedulaTask(task: Task)
+        +schedulaTaskConRitardo(task: Task, secondi: int)
+        +svuotaCoda()
+        +startup(evento: StartupEvent)
+        +shutdown(evento: ShutdownEvent)
     }
 
     class Worker {
-        -taskCorrente: Task
-        +esegui(Task)
+        <<Runnable>>
+        -task: Task
+        +run()
     }
 
-    class WorkflowDAO {
-        -- Metodi DAO standard
+    class StrategiaSchedulazione {
+        <<Interface, extends Comparator~Task~>>
     }
 
-    class TaskDAO {
-        -- Metodi DAO standard
+    class DipendenzeCrescente
+    class DipendenzeDecrescente
+    class FigliCrescente
+    class FigliDecrescente
+    class Alfabetico
+    class Casuale
+
+    class EAlgoritmoSchedulazione {
+        <<Enum>>
+        DIPENDENZE_ASC, DIPENDENZE_DESC, FIGLI_ASC, FIGLI_DESC, ALFABETICO, CASUALE
+    }
+
+    class ConfigurazioneEngine {config, Singleton>>
+        -id: Long
+        -retryPolicy: RetryPolicy
     }
 
     class RetryPolicy {
-        - maxTentativi: int
-        - intervallo: int
+        <<Embeddable>>
+        -maxTentativi: int
+        -intervallo: int
     }
 
-    class RetryPolicyDAO {
-        -- Metodi DAO standard
+    class IRepositoryWorkflow {
+        <<Interface>>
+        +persist(workflow: Workflow)
+        +findByIdOptional(id: Long) Optional~Workflow~
+        +findAll(filtroNome: String) List~Workflow~
+        +delete(id: Long)
     }
 
-    TaskSubject <|.. Task  : Implementa
-    TaskObserver <|.. Engine  : Implementa
-    TaskSubject o--> TaskObserver : Notifica i cambiamenti
+    class IRepositoryEsecuzione {
+        <<Interface>>
+        +persist(esecuzione: EsecuzioneWorkflow)
+        +aggiornaStato(id: Long, stato: EStatoWorkflow)
+        +aggiornaNomeWorkflow(id: Long, nome: String)
+        +findByIdOptional(id: Long) Optional~EsecuzioneWorkflow~
+        +getEsecuzioneInCorso() Optional~EsecuzioneWorkflow~
+        +findAll(workflowId: Long) List~EsecuzioneWorkflow~
+    }
 
-    Command <|.. ChiamataAPICommand : Implementa
-    Command <|.. QuerySQLCommand : Implementa
+    class IRepositoryTask {
+        <<Interface>>
+        +persist(task: Task)
+        +aggiornaStato(id: Long, stato: EStatoTask)
+        +findByIdOptional(id: Long) Optional~Task~
+    }
+
+    class IRepositoryConfigurazioneEngine {
+        <<Interface>>
+        +persist(config: ConfigurazioneEngine)
+        +find() ConfigurazioneEngine
+    }
+
+    Observable <|.. Task : Implementa
+    TaskObserver <|.. Engine : Implementa
+    Task ..> TaskObserver : Notifica i cambiamenti
+
     Command <|.. ScriptCommand : Implementa
+    Command <|.. CalcoloCommand : Implementa
+    Command <|.. FileIOCommand : Implementa
+    Command <|.. HttpRequestCommand : Implementa
     Task *-- Command : Contiene la logica
+    CommandMapper ..> Command : crea/serializza
 
-    Engine "1" -- "1" Workflow : Gestisce
-    Engine --> Scheduler : Invia Task READY
-    Scheduler *-- Worker : Gestisce pool
-    
-    Worker --> Task : Esegue
-    
-    Workflow *-- Task : Contiene
-    Task --> Task : Dipendenze
+    StrategiaSchedulazione <|.. DipendenzeCrescente : Implementa
+    StrategiaSchedulazione <|.. DipendenzeDecrescente : Implementa
+    StrategiaSchedulazione <|.. FigliCrescente : Implementa
+    StrategiaSchedulazione <|.. FigliDecrescente : Implementa
+    StrategiaSchedulazione <|.. Alfabetico : Implementa
+    StrategiaSchedulazione <|.. Casuale : Implementa
+    EAlgoritmoSchedulazione ..> StrategiaSchedulazione : mappa a
+
+    Workflow "1" --> "1" EsecuzioneWorkflow : avvia
+    EsecuzioneWorkflow "1" *-- "0..*" Task : possiede
+    Task "0..*" --> "0..*" Task : dipendenze/figli
     Task -- EStatoTask : Ha uno
-    Workflow -- EStatoWorkflow : Ha uno
-    
-    Engine "1"--"1" WorkflowDAO : Salva lo stato
-    Engine "1"--"1" TaskDAO : Salva lo stato
-    Engine --> RetryPolicy : Applica politiche di retry
-    Engine "1"--"1" RetryPolicyDAO : Salva le politiche di retry
+    EsecuzioneWorkflow -- EStatoWorkflow : Ha uno
+    Engine -- EStatoEngine : Deriva
+
+    Engine "1" o-- "0..*" EsecuzioneWorkflow : esecuzioniAttive
+    Engine --> Scheduler : schedula Task PRONTO
+    Scheduler --> Scheduler : codaTaskPronti
+    Scheduler ..> StrategiaSchedulazione : ordina coda con
+    Scheduler --> Worker : sottomette al thread pool
+    Worker --> Task : esegue
+
+    Engine --> ConfigurazioneEngine : legge RetryPolicy
+    ConfigurazioneEngine *-- RetryPolicy : contiene
+
+    IRepositoryWorkflow ..> Workflow : gestisce
+    IRepositoryEsecuzione ..> EsecuzioneWorkflow : gestisce
+    IRepositoryTask ..> Task : gestisce
+    IRepositoryConfigurazioneEngine ..> ConfigurazioneEngine : gestisce

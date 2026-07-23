@@ -1,45 +1,56 @@
 sequenceDiagram
     autonumber
-    participant C as Client (REST/API)
-    participant E as Engine (Main/Event Thread)
+    participant C as Client (REST)
+    participant Rest as WorkflowRest
+    participant E as Engine (synchronized)
     participant S as Scheduler
-    participant W1 as Worker-Thread-1
-    participant W2 as Worker-Thread-2
-    participant DB as Livello DAO (Database)
+    participant W1 as Worker (Task_A)
+    participant W2 as Worker (Task_B)
+    participant DAO as IRepository*
 
-    C->>E: avviaWorkflow(workflow)
-    E->>DB: salva(workflow)
+    C->>Rest: POST /workflow/{id}/avvia?algoritmo=FIGLI_DESC
+    Rest->>E: avviaEsecuzione(esecuzione, strategia)
+    E->>E: inizializzaRuntime(observer=this)
+    E->>S: setStrategia(strategia)
 
-    Note over E, S: L'Engine identifica i Task iniziali<br/>(senza dipendenze) e li invia allo Scheduler
-    E->>S: schedulaEsecuzione(Task_A)
-    E->>S: schedulaEsecuzione(Task_B)
+    Note over E, S: Task senza dipendenze sono PRONTO:<br/>l'Engine li schedula
+    E->>S: schedulaTask(Task_A)
+    E->>S: schedulaTask(Task_B)
 
-    Note over S, W2: Lo Scheduler smista i task<br/>ai thread liberi del pool
-    S-->>W1: assegna(Task_A)
-    S-->>W2: assegna(Task_B)
+    Note over S: Thread assegnaTask estrae dalla<br/>codaTaskPronti (PriorityBlockingQueue)
+    S-->>W1: submit Worker(Task_A)
+    S-->>W2: submit Worker(Task_B)
 
-    par Esecuzione Concorrente (Worker Pool)
-        Note over W1: Esecuzione su Thread 1
-        W1->>W1: Task_A.getAzione().esegui()
+    par Esecuzione concorrente (pool Worker)
+        Note over W1: Task_A.setStato(IN_ESECUZIONE)
+        W1->>W1: azione.esegui()
     and
-        Note over W2: Esecuzione su Thread 2
-        W2->>W2: Task_B.getAzione().esegui()
+        Note over W2: Task_B.setStato(IN_ESECUZIONE)
+        W2->>W2: azione.esegui()
     end
 
-    Note over W1, E: Il Task_A finisce prima.<br/>Il Worker muta lo stato,<br/>che scatena l'Observer asincrono
-    W1->>W1: Task_A.cambiaStato(COMPLETATO)
-    W1-->>E: notifyObservers() -> aggiorna(Task_A)
-    
-    Note over E, DB: L'Engine gestisce l'evento<br/>(Thread Safety richiesta qui)
-    E->>DB: aggiornaStatoTask(Task_A)
-    E->>E: check dipendenze sbloccate da Task_A
-    
-    Note over E, S: L'Engine trova il Task_C<br/>che dipendeva da Task_A e lo schedula
-    E->>S: schedulaEsecuzione(Task_C)
-    S-->>W1: assegna(Task_C) (W1 era tornato libero)
-    W1->>W1: Task_C.getAzione().esegui()
+    Note over W1, E: Task_A termina per primo:<br/>setStato() notifica gli observer
+    W1->>W1: Task_A.setStato(COMPLETATO)
+    W1-->>E: aggiorna(Task_A)
 
-    Note over W2, E: Nel frattempo, il Task_B<br/>termina la sua esecuzione lunga
-    W2->>W2: Task_B.cambiaStato(COMPLETATO)
-    W2-->>E: notifyObservers() -> aggiorna(Task_B)
-    E->>DB: aggiornaStatoTask(Task_B)
+    Note over E, DAO: Callback Observer (thread-safe, synchronized)
+    E->>DAO: aggiornaStato(Task_A, COMPLETATO)
+    E->>E: sblocca figli con dipendenze tutte COMPLETATE
+    E->>S: schedulaTask(Task_C)
+    S-->>W1: submit Worker(Task_C) (worker libero)
+    W1->>W1: Task_C.setStato(IN_ESECUZIONE) + azione.esegui()
+
+    Note over W2, E: Task_B fallisce
+    W2->>W2: azione.esegui() lancia eccezione
+    W2->>W2: annulla() e Task_B.setStato(FALLITO), errore=msg
+    W2-->>E: aggiorna(Task_B)
+
+    alt tentativi minori di maxTentativi (RetryPolicy)
+        E->>E: incrementaTentativi() e Task_B.setStato(PRONTO)
+        E->>S: schedulaTaskConRitardo(Task_B, intervallo)
+    else tentativi esauriti
+        E->>S: svuotaCoda()
+        E->>E: annulla Task IN_ESECUZIONE
+        E->>E: trasmettiStatoAiTask(FALLITO)
+        E->>DAO: aggiornaStato(esecuzione, FALLITO)
+    end

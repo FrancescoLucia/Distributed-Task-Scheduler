@@ -1,17 +1,34 @@
+---
+title: EStatoTask
+---
 stateDiagram-v2
     direction LR
-    
-    [*] --> IN_ATTESA : Aggiunta al Workflow
-    
-    IN_ATTESA --> PRONTO : Dipendenze completate
-    PRONTO --> IN_ESECUZIONE : Schedulato su un Worker
-    
-    IN_ESECUZIONE --> COMPLETATO : Command.esegui() terminato
-    IN_ESECUZIONE --> FALLITO : Eccezione/Errore
-    
-    FALLITO --> PRONTO : Applica RetryPolicy (Tentativi < Max)
-    
-    IN_ATTESA --> ANNULLATO : Azione utente / Workflow annullato
-    PRONTO --> ANNULLATO : Azione utente / Workflow annullato
-    IN_ESECUZIONE --> ANNULLATO : Command.annulla() invocato
 
+    [*] --> IN_ATTESA : Task creato (con dipendenze)
+    [*] --> PRONTO : Task creato (senza dipendenze)
+
+    IN_ATTESA --> PRONTO : Tutte le dipendenze COMPLETATE
+    PRONTO --> IN_ESECUZIONE : Assegnato a un Worker
+
+    IN_ESECUZIONE --> COMPLETATO : Command.esegui() riuscito
+    IN_ESECUZIONE --> FALLITO : Eccezione/errore nel Command
+
+    FALLITO --> PRONTO : Retry (tentativi < maxTentativi)
+
+    IN_ATTESA --> ANNULLATO : trasmettiStatoAiTask() (workflow FALLITO/ANNULLATO)
+    PRONTO --> ANNULLATO : trasmettiStatoAiTask() (workflow FALLITO/ANNULLATO)
+    IN_ESECUZIONE --> ANNULLATO : trasmettiStatoAiTask() + Command.annulla()
+
+    COMPLETATO --> [*]
+    ANNULLATO --> [*]
+
+    note right of COMPLETATO
+        Stato terminale, non riavviabile
+    end note
+    note right of ANNULLATO
+        Stato terminale, non riavviabile
+    end note
+    note right of FALLITO
+        Terminale solo se tentativi >= maxTentativi
+        (l'Engine porta il workflow a FALLITO)
+    end note
