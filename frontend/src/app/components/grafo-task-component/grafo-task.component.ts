@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, signal } from '@angular/core';
 import cytoscape, { Core, ElementDefinition } from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 
@@ -17,6 +17,13 @@ interface ElementoNodoGrafo {
   id: string;
   label: string;
   stato: string;
+  errore?: string;
+}
+
+interface TooltipErrore {
+  x: number;
+  y: number;
+  testo: string;
 }
 
 interface ElementoArcoGrafo {
@@ -36,6 +43,8 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   @ViewChild('contenitoreGrafo', { static: true })
   private readonly contenitoreGrafo!: ElementRef<HTMLDivElement>;
+
+  protected readonly tooltipErrore = signal<TooltipErrore | null>(null);
 
   private cy?: Core;
   private resizeObserver?: ResizeObserver;
@@ -118,9 +127,27 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
             'background-color': '#fff1d6',
           },
         },
+        {
+          selector: 'node[errore != ""]',
+          style: {
+            'border-style': 'dashed',
+            'border-width': 2,
+          },
+        },
       ],
     });
     this.chiaveStrutturaGrafo = this.chiaveStruttura();
+
+    this.cy.on('mouseover', 'node[errore != ""]', evento => {
+      const posizione = evento.target.renderedPosition();
+      this.tooltipErrore.set({
+        x: posizione.x,
+        y: posizione.y - evento.target.renderedHeight() / 2 - 8,
+        testo: evento.target.data('errore'),
+      });
+    });
+    this.cy.on('mouseout', 'node[errore != ""]', () => this.tooltipErrore.set(null));
+    this.cy.on('pan zoom', () => this.tooltipErrore.set(null));
 
     this.resizeObserver = new ResizeObserver(() => this.schedulaRicalcoloLayout());
     this.resizeObserver.observe(this.contenitoreGrafo.nativeElement);
@@ -175,6 +202,7 @@ export class GrafoTaskComponent implements AfterViewInit, OnChanges, OnDestroy {
       id: String(nodo.id),
       label: `${icona}${nodo.nome}${stato}${retry}`,
       stato: nodo.stato ?? '',
+      errore: nodo.errore ?? '',
     };
   }
 

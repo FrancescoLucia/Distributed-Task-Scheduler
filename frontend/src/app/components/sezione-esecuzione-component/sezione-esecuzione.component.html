@@ -80,6 +80,9 @@
               }
               <div matListItemTitle>{{ nodo.nome }}</div>
               <div matListItemLine>{{ etichettaStato(nodo.stato) }}</div>
+              @if (nodo.errore) {
+                <div matListItemLine class="riga-errore" [matTooltip]="nodo.errore">{{ nodo.errore }}</div>
+              }
               <div matListItemMeta>
                 @if (nodo.tentativi > 0) {
                   <mat-chip-set aria-label="Retry">

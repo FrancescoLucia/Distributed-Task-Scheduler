@@ -79,6 +79,9 @@ public class Task implements Observable {
     @Column(name = "command_payload", nullable = false)
     private String commandPayload;
 
+    @Column(columnDefinition = "text")
+    private String errore;
+
     private transient List<TaskObserver> observer = new ArrayList<>();
 
     public Task(String nome, Command azione) {

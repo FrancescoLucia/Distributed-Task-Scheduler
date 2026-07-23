@@ -51,6 +51,7 @@ export interface NodoGrafo {
   tipo: ETipoTask;
   stato: EStatoTask | null;
   tentativi: number;
+  errore?: string;
 }
 
 export interface ArcoDipendenza {

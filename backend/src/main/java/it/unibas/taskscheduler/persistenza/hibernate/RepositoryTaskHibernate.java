@@ -24,8 +24,8 @@ public class RepositoryTaskHibernate implements IRepositoryTask, PanacheReposito
     @Override
     @Transactional
     public void aggiornaStato(Task task) {
-        update("stato = ?1, tentativi = ?2 where id = ?3",
-                task.getStato(), task.getTentativi(), task.getId());
+        update("stato = ?1, tentativi = ?2, errore = ?3 where id = ?4",
+                task.getStato(), task.getTentativi(), task.getErrore(), task.getId());
     }
 
     @Override

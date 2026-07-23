@@ -35,7 +35,12 @@ public class Worker implements Runnable {
         } catch (Exception e) {
             log.error("Task {} fallito.", task.getNome(), e);
             task.annulla();
+            task.setErrore(messaggioErrore(e));
             task.setStato(EStatoTask.FALLITO);
         }
+    }
+
+    private String messaggioErrore(Exception e) {
+        return e.getMessage() != null ? e.getMessage() : e.toString();
     }
 }

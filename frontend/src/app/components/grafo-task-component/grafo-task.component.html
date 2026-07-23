@@ -1,6 +1,13 @@
-<div
-  #contenitoreGrafo
-  class="contenitore-grafo"
-  role="img"
-  aria-label="Grafo dei task del workflow con dipendenze"
-></div>
+<div class="wrapper-grafo">
+  <div
+    #contenitoreGrafo
+    class="contenitore-grafo"
+    role="img"
+    aria-label="Grafo dei task del workflow con dipendenze"
+  ></div>
+  @if (tooltipErrore(); as tooltip) {
+    <div class="tooltip-errore" [style.left.px]="tooltip.x" [style.top.px]="tooltip.y">
+      {{ tooltip.testo }}
+    </div>
+  }
+</div>
